@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Tab } from "./types";
 import Sidebar from "./components/Sidebar";
 import CalendarPage from "./pages/CalendarPage";
+import HistoryPage from "./pages/HistoryPage";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("calendar");
@@ -14,7 +15,7 @@ function App() {
 
         <div className="flex-1 p-4">
           {activeTab === "calendar" && <CalendarPage />}
-          {activeTab === "profits" && <div>ここに収支一覧を表示</div>}
+          {activeTab === "profits" &&  <HistoryPage />}
           {activeTab === "settings" && <div>ここに設定画面を表示</div>}
         </div>
       </div>
