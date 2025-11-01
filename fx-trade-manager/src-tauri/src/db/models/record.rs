@@ -9,7 +9,7 @@ pub struct Record {
     #[serde(rename = "売買")]
     pub side: String,
     #[serde(rename = "区分")]
-    pub type: String,
+    pub trade_type: String,
     #[serde(rename = "数量（Lot）")]
     pub lot: f64,
     #[serde(rename = "約定レート")]

@@ -8,12 +8,12 @@ pub fn insert_record(conn: &DbState, record: Record) -> Result<(), String> {
     let conn = conn.conn.lock().map_err(|e| e.to_string())?;
     conn.execute(
         "INSERT INTO records (
-        pair, side, type, lot, rate, profit, swap, order_time
+        pair, side, trade_type, lot, rate, profit, swap, order_time
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
             record.pair,
             record.side,
-            record.type,
+            record.trade_type,
             record.lot,
             record.rate,
             record.profit,
@@ -37,7 +37,7 @@ pub fn get_all_records(conn: &DbState) -> Result<Vec<Record>, String> {
                 id: row.get(0)?,
                 pair: row.get(1)?,
                 side: row.get(2)?,
-                type: row.get(3)?,
+                trade_type: row.get(3)?,
                 lot: row.get(4)?,
                 rate: row.get(5)?,
                 profit: row.get(6)?,

@@ -4,7 +4,7 @@ pub const TABLES: &[&str] = &[
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         pair TEXT NOT NULL,
         side TEXT NOT NULL,         -- 買 or 売
-        type TEXT NOT NULL,   -- 新規 or 決済
+        trade_type TEXT NOT NULL,   -- 新規 or 決済
         lot REAL NOT NULL,
         rate REAL NOT NULL,
         profit INTEGER,
