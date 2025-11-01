@@ -15,13 +15,13 @@ impl DbState {
     pub fn new() -> Result<Self> {
         // 開発用と本番用で DB ファイルの場所を切り替える
         #[cfg(debug_assertions)]
-        let db_path = PathBuf::from("src-tauri/profits.db");
+        let db_path = PathBuf::from("../records.db");
 
         #[cfg(not(debug_assertions))]
         let db_path = app_data_dir()
             .expect("failed to get app data dir")
             .join("fx-trade-manager")
-            .join("profits.db");
+            .join("records.db");
 
         // DB が置かれるディレクトリが存在しなければ作る
         if let Some(parent) = db_path.parent() {

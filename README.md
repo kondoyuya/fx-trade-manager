@@ -22,7 +22,7 @@ fx-trade-manager/
 ├── src-tauri/ # Rust (Tauri) バックエンド
 ├── package.json # React/Tauri 共通設定
 ├── tauri.conf.json # Tauri 設定ファイル
-└── profits.db # SQLite データベース（実行後に生成）
+└── records.db # SQLite データベース（実行後に生成）
 ```
 
 ## 開発環境セットアップ
