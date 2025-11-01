@@ -9,7 +9,7 @@ pub const TABLES: &[&str] = &[
         rate REAL NOT NULL,
         profit INTEGER,
         swap INTEGER,
-        order_time TEXT
+        order_time INTEGER
     )
     "#,
 ];

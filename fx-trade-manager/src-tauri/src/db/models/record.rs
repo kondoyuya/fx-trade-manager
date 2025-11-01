@@ -10,5 +10,5 @@ pub struct Record {
     pub rate: f64,
     pub profit: Option<i32>,
     pub swap: Option<i32>,
-    pub order_time: String,
+    pub order_time: i64,
 }
