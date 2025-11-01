@@ -1,7 +1,7 @@
 use crate::db::DbState;
 use crate::service::records::{import_csv_to_db,fetch_all_records};
 use tauri::State;
-use crate::db::models::record::Record;
+use crate::models::db::record::Record;
 
 #[tauri::command]
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {

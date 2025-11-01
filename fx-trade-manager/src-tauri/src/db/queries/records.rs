@@ -1,7 +1,7 @@
 use rusqlite::{params, Result};
 
 use crate::db::DbState;
-use crate::db::models::record::Record;
+use crate::models::db::record::Record;
 
 
 pub fn insert_record(state: &DbState, record: Record) -> Result<(), String> {

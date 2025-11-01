@@ -4,6 +4,7 @@ mod service;
 mod commands;
 mod db;
 mod utils;
+mod models;
 
 fn main() {
     let app = tauri::Builder::default()

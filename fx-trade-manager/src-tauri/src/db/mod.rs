@@ -4,7 +4,6 @@ use std::sync::{Arc, Mutex};
 
 pub mod schema;
 pub mod queries;
-pub mod models;
 
 pub struct DbState {
     pub conn: Arc<Mutex<Connection>>,

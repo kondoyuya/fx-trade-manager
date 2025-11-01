@@ -1,6 +1,6 @@
 use crate::db::DbState;
 use crate::db::queries::records;
-use crate::db::models::record::Record;
+use crate::models::db::record::Record;
 use crate::utils::time_utils::jst_str_to_unix;
 
 pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
