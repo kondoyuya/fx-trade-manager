@@ -12,6 +12,7 @@ struct ProfitEntry {
 
 struct DbState {
     conn: Arc<Mutex<Connection>>,
+}
 
 impl DbState {
     fn new() -> Result<Self> {
