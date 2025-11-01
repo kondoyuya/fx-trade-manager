@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Calendar from "react-calendar";
+import Calendar, { CalendarProps } from "react-calendar";
 import { invoke } from "@tauri-apps/api/core";
 import "react-calendar/dist/Calendar.css";
 import "./index.css";
@@ -8,11 +8,14 @@ interface DailyProfit {
   [date: string]: number;
 }
 
+type Tab = "calendar" | "profits" | "settings";
+
 function App() {
-  const [date, setDate] = useState<Date>(new Date());
+  const [selectedDate, setDate] = useState<Date>(new Date());
   const [profits, setProfits] = useState<DailyProfit>({});
   const [selectedProfit, setSelectedProfit] = useState<number | "">(0);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>("calendar");
 
   const formatDate = (d: Date) => d.toISOString().split("T")[0];
 
@@ -26,10 +29,12 @@ function App() {
     })();
   }, []);
 
-  const handleDateChange = (value: Date | Date[]) => {
-    if (Array.isArray(value)) return;
-    setDate(value);
-    const key = formatDate(value);
+  const handleDateChange: CalendarProps['onChange'] = (value) => {
+    if (!value) return;
+    const date = Array.isArray(value) ? value[0] : value;
+    if (date == null) return
+    setDate(date);
+    const key = formatDate(selectedDate);
     setSelectedProfit(profits[key] ?? "");
     setIsEditing(true);
   };
@@ -52,7 +57,7 @@ function App() {
   };
 
   const handleSave = async () => {
-    const key = formatDate(date);
+    const key = formatDate(selectedDate);
     const value = Number(selectedProfit);
     await invoke("save_profit", { date: key, amount: value });
     setProfits({ ...profits, [key]: value });
@@ -65,10 +70,43 @@ function App() {
         📊 FXトレードマネージャー
       </h1>
 
-      <div className="bg-white p-4 rounded-2xl shadow-md">
+      <div className="flex h-screen">
+      {/* 左サイドバー */}
+      <div className="w-48 bg-gray-100 p-4 flex flex-col space-y-2">
+        <button
+          className={`p-2 rounded ${
+            activeTab === "calendar" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+          }`}
+          onClick={() => setActiveTab("calendar")}
+        >
+          カレンダー
+        </button>
+        <button
+          className={`p-2 rounded ${
+            activeTab === "profits" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+          }`}
+          onClick={() => setActiveTab("profits")}
+        >
+          収支一覧
+        </button>
+        <button
+          className={`p-2 rounded ${
+            activeTab === "settings" ? "bg-blue-500 text-white" : "hover:bg-gray-200"
+          }`}
+          onClick={() => setActiveTab("settings")}
+        >
+          設定
+        </button>
+      </div>
+      </div>
+
+      {/* メインコンテンツ */}
+      <div className="flex-1 p-4">
+        {activeTab === "calendar" && <div>
+                <div className="bg-white p-4 rounded-2xl shadow-md">
         <Calendar
           onChange={handleDateChange}
-          value={date}
+          value={selectedDate}
           locale="ja-JP"
           tileContent={renderTileContent}
         />
@@ -77,7 +115,7 @@ function App() {
       {isEditing && (
         <div className="mt-6 bg-white p-4 rounded-xl shadow-md w-80">
           <h2 className="text-xl font-semibold mb-3 text-gray-800">
-            {formatDate(date)} の収支を入力
+            {formatDate(selectedDate)} の収支を入力
           </h2>
           <input
             type="number"
@@ -104,6 +142,12 @@ function App() {
           </div>
         </div>
       )}
+          </div>}
+        {activeTab === "profits" && <div>ここに収支一覧を表示</div>}
+        {activeTab === "settings" && <div>ここに設定画面を表示</div>}
+      </div>
+
+
     </div>
   );
 }
