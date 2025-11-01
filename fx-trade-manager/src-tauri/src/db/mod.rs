@@ -2,7 +2,6 @@ use rusqlite::{Connection, Result};
 use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 
-pub mod profit;
 pub mod schema;
 
 pub struct DbState {

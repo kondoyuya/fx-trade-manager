@@ -1,4 +1,4 @@
-use crate::db::{profit, DbState};
+use crate::db::{records, DbState};
 use tauri::State;
 
 #[tauri::command]
