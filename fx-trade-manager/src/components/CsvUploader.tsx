@@ -1,26 +1,29 @@
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readTextFile } from "@tauri-apps/plugin-fs";
+import { invoke } from "@tauri-apps/api/core";
 
 interface CsvUploaderProps {}
 
 const CsvUploader: React.FC<CsvUploaderProps> = () => {
 
-  const [fileContent, setFileContent] = useState<string>("");
+  const [fileContent, setStatus] = useState<string>("");
   
   const handleFileOpen = async () => {
-    try {
-      const selected = await open({
-        multiple: false,
-        directory: false,
-      });
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: "CSV", extensions: ["csv"] }],
+    });
 
-      if (selected && typeof selected === "string") {
-        const content = await readTextFile(selected);
-        setFileContent(content);
+    if (typeof selected === "string") {
+      setStatus("Importing CSV...");
+
+      try {
+        await invoke("insert_record", { csvPath: selected });
+        setStatus("CSV imported successfully!");
+      } catch (e) {
+        console.error(e);
+        setStatus(`Failed to import CSV: ${JSON.stringify(e)}`);
       }
-    } catch (error) {
-      console.error("Error has occured when read file: ", error);
     }
   };
 

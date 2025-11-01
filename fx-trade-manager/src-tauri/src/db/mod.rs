@@ -3,6 +3,8 @@ use std::sync::{Arc, Mutex};
 use std::path::PathBuf;
 
 pub mod schema;
+pub mod queries;
+pub mod models;
 
 pub struct DbState {
     pub conn: Arc<Mutex<Connection>>,
