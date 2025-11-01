@@ -4,9 +4,9 @@ use crate::db::DbState;
 use crate::db::models::record::Record;
 
 
-pub fn insert_record(conn: &DbState, record: Record) -> Result<(), String> {
-    let conn = conn.conn.lock().map_err(|e| e.to_string())?;
-    conn.execute(
+pub fn insert_record(state: &DbState, record: Record) -> Result<(), String> {
+    let state = state.conn.lock().map_err(|e| e.to_string())?;
+    state.execute(
         "INSERT INTO records (
         pair, side, trade_type, lot, rate, profit, swap, order_time
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
@@ -25,9 +25,9 @@ pub fn insert_record(conn: &DbState, record: Record) -> Result<(), String> {
     Ok(())
 }
 
-pub fn get_all_records(conn: &DbState) -> Result<Vec<Record>, String> {
-    let conn = conn.conn.lock().map_err(|e| e.to_string())?;
-    let mut stmt = conn
+pub fn get_all_records(state: &DbState) -> Result<Vec<Record>, String> {
+    let state = state.conn.lock().map_err(|e| e.to_string())?;
+    let mut stmt = state
         .prepare("SELECT * FROM records")
         .map_err(|e| e.to_string())?;
 

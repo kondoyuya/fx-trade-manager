@@ -26,3 +26,32 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
 
     Ok(())
 }
+
+pub fn fetch_all_records(db: &DbState) -> Result<Vec<Record>, String> {
+    let conn = db.conn.lock().map_err(|e| e.to_string())?;
+    let mut stmt = conn
+        .prepare("SELECT id, pair, side, trade_type, lot, rate, profit, swap, order_time FROM records")
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            Ok(Record {
+                id: row.get(0)?,
+                pair: row.get(1)?,
+                side: row.get(2)?,
+                trade_type: row.get(3)?,
+                lot: row.get(4)?,
+                rate: row.get(5)?,
+                profit: row.get(6)?,
+                swap: row.get(7)?,
+                order_time: row.get(8)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut records = Vec::new();
+    for r in rows {
+        records.push(r.map_err(|e| e.to_string())?);
+    }
+    Ok(records)
+}

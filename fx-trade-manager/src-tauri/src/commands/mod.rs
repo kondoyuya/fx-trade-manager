@@ -4,6 +4,7 @@ macro_rules! register_commands {
     ($builder:expr) => {
         $builder.invoke_handler(tauri::generate_handler![
             crate::commands::records_cmd::insert_record,
+            crate::commands::records_cmd::get_all_records,
         ])
     };
 }
