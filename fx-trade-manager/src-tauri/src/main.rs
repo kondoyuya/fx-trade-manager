@@ -3,7 +3,6 @@ mod commands;
 
 use crate::db::DbState;
 use crate::commands::*;
-use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()

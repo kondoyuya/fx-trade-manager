@@ -1,7 +1,6 @@
 use crate::db::DbState;
 use rusqlite::{params, Result};
 use serde::{Deserialize, Serialize};
-use tauri::State;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProfitEntry {

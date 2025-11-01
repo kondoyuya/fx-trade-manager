@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Tab } from "./types";
 import Sidebar from "./components/Sidebar";
 import CalendarPage from "./pages/CalendarPage";
