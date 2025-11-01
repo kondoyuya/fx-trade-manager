@@ -3,6 +3,7 @@ use crate::db::DbState;
 mod service;
 mod commands;
 mod db;
+mod utils;
 
 fn main() {
     let app = tauri::Builder::default()

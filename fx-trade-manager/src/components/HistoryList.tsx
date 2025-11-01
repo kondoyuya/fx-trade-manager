@@ -10,7 +10,21 @@ interface Record {
   rate: number;
   profit?: number;
   swap?: number;
-  order_time: string;
+  order_time: number;
+}
+
+function unixToJstString(unix: number): string {
+  const date = new Date(unix * 1000); // JSではミリ秒
+  return date.toLocaleString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+    timeZone: "Asia/Tokyo" // JSTを明示
+  });
 }
 
 interface HistoryListProps {}
@@ -55,7 +69,7 @@ const HistoryList: React.FC<HistoryListProps> = () => {
               <td className="border border-gray-300 p-2">{r.rate}</td>
               <td className="border border-gray-300 p-2">{r.profit ?? "-"}</td>
               <td className="border border-gray-300 p-2">{r.swap ?? "-"}</td>
-              <td className="border border-gray-300 p-2">{r.order_time}</td>
+              <td className="border border-gray-300 p-2">{unixToJstString(r.order_time)}</td>
             </tr>
           ))}
         </tbody>

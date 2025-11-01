@@ -1,6 +1,6 @@
+use std::path::PathBuf;
 use rusqlite::{Connection, Result};
 use std::sync::{Arc, Mutex};
-use std::path::PathBuf;
 
 pub mod schema;
 pub mod queries;
