@@ -1,6 +1,7 @@
 import { useState } from "react";
 import CalendarPage from "./pages/CalendarPage";
 import HistoryPage from "./pages/HistoryPage";
+import ChartPage from "./pages/ChartPage";
 import { Tab } from "./types";
 import './index.css';
 
@@ -34,6 +35,14 @@ function App() {
           >
             📊 取引履歴
           </button>
+          <button
+            className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
+              activeTab === "chart" ? "bg-gray-700" : ""
+            }`}
+            onClick={() => setActiveTab("chart")}
+          >
+            📈 チャート
+          </button>
         </nav>
 
         {/* フッター */}
@@ -46,6 +55,7 @@ function App() {
       <main className="flex-1 bg-gray-100 p-6 overflow-auto">
         {activeTab === "calendar" && <CalendarPage />}
         {activeTab === "history" && <HistoryPage />}
+        {activeTab === "chart" && <ChartPage />}
       </main>
     </div>
   );
