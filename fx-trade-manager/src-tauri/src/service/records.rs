@@ -1,7 +1,9 @@
 use crate::db::DbState;
 use crate::db::queries::records;
-use crate::db::models::record::Record;
-use crate::utils::time_utils::jst_str_to_unix;
+use crate::models::db::record::Record;
+use crate::models::service::daily_summary::DailySummary;
+use crate::utils::time_utils::{jst_str_to_unix, get_business_date_from_unix};
+use std::collections::HashMap;
 
 pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
     let mut rdr = csv::ReaderBuilder::new()
@@ -35,4 +37,37 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
 
 pub fn fetch_all_records(db: &DbState) -> Result<Vec<Record>, String> {
     records::get_all_records(db)
+}
+
+pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
+    let records_result = records::get_all_records(db);
+
+    let records = match records_result {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("❌ Failed to load records: {}", e);
+            return Err(e);
+        }
+    };
+
+    let mut map: HashMap<chrono::NaiveDate, DailySummary> = HashMap::new();
+
+    for r in records {
+        // UNIX TIME → JST 日付
+        let date = get_business_date_from_unix(r.order_time);
+
+        let entry = map.entry(date).or_insert(DailySummary {
+            date,
+            profit: 0,
+            count: 0,
+        });
+
+        entry.profit += r.profit.unwrap_or(0);
+        entry.count += 1;
+    }
+
+    let mut summary: Vec<DailySummary> = map.into_iter().map(|(_, v)| v).collect();
+    summary.sort_by_key(|s| s.date);
+
+    Ok(summary)
 }
