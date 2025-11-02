@@ -58,7 +58,7 @@ pub fn import_candle_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         let unix_time = Utc.from_utc_datetime(&naive_dt).timestamp();
 
         let candle = Candle {
-            datetime: unix_time,
+            time: unix_time,
             open: record[2].parse::<f64>().unwrap(),
             high: record[3].parse::<f64>().unwrap(),
             low: record[4].parse::<f64>().unwrap(),

@@ -7,6 +7,7 @@ macro_rules! register_commands {
             crate::commands::records_cmd::insert_candle,
             crate::commands::records_cmd::get_all_records,
             crate::commands::records_cmd::get_daily_records,
+            crate::commands::records_cmd::get_candles,
         ])
     };
 }
