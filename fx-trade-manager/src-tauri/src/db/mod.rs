@@ -1,3 +1,4 @@
+use directories::ProjectDirs;
 use std::path::PathBuf;
 use rusqlite::{Connection, Result};
 use std::sync::{Arc, Mutex};

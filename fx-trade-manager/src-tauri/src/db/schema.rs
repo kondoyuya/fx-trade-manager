@@ -12,4 +12,18 @@ pub const TABLES: &[&str] = &[
         order_time INTEGER
     )
     "#,
+
+    r#"
+    CREATE TABLE IF NOT EXISTS candles(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        time INTEGER NOT NULL UNIQUE,  -- UNIXTIMEで管理
+        open REAL NOT NULL,
+        high REAL NOT NULL,
+        low REAL NOT NULL,
+        close REAL NOT NULL,
+        tickvol INTEGER,
+        vol INTEGER,
+        spread INTEGER
+    )
+    "#,
 ];
