@@ -2,7 +2,7 @@ use crate::db::DbState;
 use crate::db::queries::records;
 use crate::models::db::record::Record;
 use crate::models::service::daily_summary::DailySummary;
-use crate::utils::time_utils::{jst_str_to_unix, get_business_date_from_unix};
+use crate::utils::time_utils::{get_business_date_from_unix};
 use std::collections::HashMap;
 
 pub fn fetch_all_records(db: &DbState) -> Result<Vec<Record>, String> {

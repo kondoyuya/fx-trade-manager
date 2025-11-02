@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Calendar, { CalendarProps } from "react-calendar";
+import Calendar from "react-calendar";
 import { invoke } from "@tauri-apps/api/core";
 import { DailySummary } from "../types";
 import "react-calendar/dist/Calendar.css";

@@ -1,5 +1,4 @@
-use serde::Serialize;
-use rusqlite::{Connection, Result};
+use rusqlite::Result;
 use crate::db::DbState;
 use crate::models::db::candle::Candle;
 

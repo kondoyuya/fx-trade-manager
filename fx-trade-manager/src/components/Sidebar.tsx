@@ -9,7 +9,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const tabs: { label: string; key: Tab }[] = [
     { label: "カレンダー", key: "calendar" },
-    { label: "収支一覧", key: "profits" },
+    { label: "収支一覧", key: "history" },
     { label: "設定", key: "settings" },
   ];
 
