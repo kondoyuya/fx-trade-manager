@@ -29,9 +29,14 @@ const CalendarView: React.FC<CalendarViewProps> = () => {
     return record ? record.profit : null;
   };
 
+  const getSummaryFromDate = (date: Date): DailySummary | null => {
+    const dateStr = date.toISOString().split("T")[0]; // YYYY-MM-DD
+    const record = summaries.find((s) => s.date === dateStr);
+    return record ? record : null;
+  };
+
   return (
     <main className="container mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Daily Profit Calendar</h1>
 
       <Calendar
         onClickDay={(value) => setSelectedDate(value)}
@@ -52,10 +57,30 @@ const CalendarView: React.FC<CalendarViewProps> = () => {
           </h2>
           <p>
             利益:{" "}
-            {getProfitForDate(selectedDate)?.toLocaleString("ja-JP", {
+            {getSummaryFromDate(selectedDate)?.profit.toLocaleString("ja-JP", {
               maximumFractionDigits: 0,
-            }) ?? "-"}
+            }) ?? "0"}
           </p>
+          <p>
+            トレード回数:{" "}
+            {getSummaryFromDate(selectedDate)?.count ?? "0"}
+          </p>
+          <p>
+            勝ちトレード回数:{" "}
+            {getSummaryFromDate(selectedDate)?.wins ?? "0"}
+          </p>
+          <p>
+            負けトレード回数:{" "}
+            {getSummaryFromDate(selectedDate)?.losses ?? "0"}
+          </p>
+          <p>
+            勝率:{" "}
+            {getSummaryFromDate(selectedDate)?.count ?? 0 > 0
+              ? (((getSummaryFromDate(selectedDate)?.wins ?? 0) / (getSummaryFromDate(selectedDate)?.count ?? 1)) * 100).toFixed(1)
+              : 0}
+            %
+          </p>
+          
         </div>
       )}
     </main>

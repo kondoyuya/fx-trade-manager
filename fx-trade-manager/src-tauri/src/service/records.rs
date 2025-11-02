@@ -52,6 +52,7 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
 
     let mut map: HashMap<chrono::NaiveDate, DailySummary> = HashMap::new();
 
+    // ひとまず注文と決済が交互に、日を跨がない前提で作る
     for r in records {
         // UNIX TIME → JST 日付
         let date = get_business_date_from_unix(r.order_time);
@@ -60,10 +61,27 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
             date,
             profit: 0,
             count: 0,
+            wins: 0,
+            losses: 0,
+            win_total: 0,
+            loss_total: 0,
+            total_holding_time: 0,
         });
 
         entry.profit += r.profit.unwrap_or(0);
-        entry.count += 1;
+        if r.trade_type == "決済" {
+            entry.count += 1;
+        }
+
+        let profit = r.profit.unwrap_or(0);
+
+        if profit > 0 {
+            entry.wins += 1;
+            entry.win_total += profit;
+        } else if profit < 0 {
+            entry.losses += 1;
+            entry.loss_total += profit;
+        }
     }
 
     let mut summary: Vec<DailySummary> = map.into_iter().map(|(_, v)| v).collect();
