@@ -1,1 +1,1 @@
-pub mod daily_record;
+pub mod daily_summary;
