@@ -1,7 +1,14 @@
-.react-calendar__tile {
-  height: 80px !important;
-}
+@import "tailwindcss";
 
+.react-calendar__tile {
+  height: 80px !important; /* 高さを固定 */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* 上下に余白を作る */
+  align-items: center;
+  padding: 8px; /* 内側の余白 */
+  box-sizing: border-box; /* パディングを含めて高さを固定 */
+}
 .react-calendar__tile > abbr {
   display: block;
 }
