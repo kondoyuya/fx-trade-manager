@@ -1,5 +1,6 @@
 use crate::db::DbState;
-use crate::service::records::{import_csv_to_db, fetch_all_records, fetch_daily_records};
+use crate::service::import::{import_csv_to_db, import_candle_to_db};
+use crate::service::records::{fetch_all_records, fetch_daily_records};
 use tauri::State;
 use crate::models::db::record::Record;
 use crate::models::service::daily_summary::DailySummary;
@@ -8,6 +9,12 @@ use crate::models::service::daily_summary::DailySummary;
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
     let db = &*state;
     import_csv_to_db(db, csv_path)
+}
+
+#[tauri::command]
+pub fn insert_candle(state: State<DbState>, csv_path: &str) -> Result<(), String> {
+    let db = &*state;
+    import_candle_to_db(db, csv_path)
 }
 
 #[tauri::command]

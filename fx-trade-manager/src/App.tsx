@@ -2,6 +2,7 @@ import { useState } from "react";
 import CalendarPage from "./pages/CalendarPage";
 import HistoryPage from "./pages/HistoryPage";
 import ChartPage from "./pages/ChartPage";
+import ImportPage from "./pages/ImportPage";
 import { Tab } from "./types";
 import './index.css';
 
@@ -43,6 +44,14 @@ function App() {
           >
             📈 チャート
           </button>
+          <button
+            className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
+              activeTab === "chart" ? "bg-gray-700" : ""
+            }`}
+            onClick={() => setActiveTab("import")}
+          >
+            💼 インポート
+          </button>
         </nav>
 
         {/* フッター */}
@@ -56,6 +65,7 @@ function App() {
         {activeTab === "calendar" && <CalendarPage />}
         {activeTab === "history" && <HistoryPage />}
         {activeTab === "chart" && <ChartPage />}
+        {activeTab === "import" && <ImportPage />}
       </main>
     </div>
   );
