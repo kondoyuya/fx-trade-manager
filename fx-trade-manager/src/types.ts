@@ -4,4 +4,4 @@ export interface DailySummary {
   count: number;
 }
 
-export type Tab = "calendar" | "profits" | "settings";
+export type Tab = "calendar" | "history" | "settings";
