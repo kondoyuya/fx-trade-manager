@@ -4,6 +4,7 @@ import {
     Time,
     CandlestickSeries,
     CandlestickData,
+    UTCTimestamp,
 } from 'lightweight-charts';
 import { invoke } from "@tauri-apps/api/core";
 
@@ -18,8 +19,10 @@ interface Candle {
 }
 
 const ChartView: React.FC<ChartViewProps> = () => {
+    const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
     const [candleData, setCandleData] = useState<CandlestickData<Time>[]>([]);
+    const [searchTime, setSearchTime] = useState<string>("");
 
     // --- (1) DBからデータを取得 ---
     useEffect(() => {
@@ -59,6 +62,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
         const candleSeries = chart.addSeries(CandlestickSeries, {});
         candleSeries.setData(candleData);
 
+        chartRef.current = chart;
+
         // 初期は直近100本を拡大表示
         const times = candleData.map(c => c.time as Time);
         const to = times[times.length - 1];
@@ -66,12 +71,53 @@ const ChartView: React.FC<ChartViewProps> = () => {
         chart.timeScale().setVisibleRange({ from, to });
 
         return () => {
+            console.log("aa");
             chart.remove();
         };
-    }, [candleData]); // ← データが入ったら実行
+    }, [candleData]); // データが入ったら実行
+
+    // --- (3) 指定時刻検索 ---
+    const handleSearch = () => {
+        if (!chartRef.current || candleData.length === 0 || !searchTime) return;
+        const targetUnix = Math.floor(new Date(searchTime).getTime() / 1000);
+        console.log(targetUnix);
+
+        // 最も近いローソク足を探す
+        const closest = candleData.reduce((prev, curr) => {
+            return Math.abs((curr.time as number) - targetUnix) <
+                Math.abs((prev.time as number) - targetUnix)
+                ? curr
+                : prev;
+        });
+
+        console.log(closest);
+
+        const rangeSize = 50; // 前後にどのくらい表示するか
+        const from = ((closest.time as number) - rangeSize * 60) as UTCTimestamp;
+        const to = ((closest.time as number) + rangeSize * 60) as UTCTimestamp;
+        
+        chartRef.current.timeScale().setVisibleRange({ from, to });
+    };
 
     return (
-        <div className="flex justify-center mt-4">
+        <div className="flex flex-col items-center mt-4 space-y-4">
+            {/* 🔍 検索フォーム */}
+            <div className="flex items-center space-x-2">
+                <input
+                    type="datetime-local"
+                    value={searchTime}
+                    onChange={(e) => setSearchTime(e.target.value)}
+                    className="border rounded p-1"
+                />
+                <button
+                    onClick={handleSearch}
+                    className="bg-blue-500 text-white px-3 py-1 rounded"
+                >
+                    検索
+                </button>
+            </div>
+
+            {/* 📈 チャート本体 */}
             <div ref={chartContainerRef} style={{ width: "800px", height: "600px" }} />
         </div>
     );
