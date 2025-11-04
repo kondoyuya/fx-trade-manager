@@ -46,7 +46,7 @@ function App() {
           </button>
           <button
             className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
-              activeTab === "chart" ? "bg-gray-700" : ""
+              activeTab === "import" ? "bg-gray-700" : ""
             }`}
             onClick={() => setActiveTab("import")}
           >
