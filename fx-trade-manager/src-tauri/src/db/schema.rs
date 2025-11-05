@@ -36,8 +36,10 @@ pub const TABLES: &[&str] = &[
         lot REAL NOT NULL,
         entry_rate REAL NOT NULL,
         exit_rate REAL NOT NULL,
+        entry_time INTEGER NOT NULL,
+        exit_time INTEGER NOT NULL,
         profit INTEGER NOT NULL,
-        profit_pips REAL NOT NULL,
+        profit_pips INTEGER NOT NULL,
         swap INTEGER,
         memo TEXT
     )
