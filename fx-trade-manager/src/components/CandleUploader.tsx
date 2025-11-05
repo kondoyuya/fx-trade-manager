@@ -2,9 +2,9 @@ import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 
-interface RecordUploaderProps {}
+interface CandleUploaderProps {}
 
-const RecordUploader: React.FC<RecordUploaderProps> = () => {
+const CandleUploader: React.FC<CandleUploaderProps> = () => {
 
   const [fileContent, setStatus] = useState<string>("");
   
@@ -42,7 +42,7 @@ const RecordUploader: React.FC<RecordUploaderProps> = () => {
             transition-colors duration-200
           "
         >
-          チャート情報をインポート
+          1分足のOHLCをインポート
         </button>
 
         {/* ボタンの説明 */}
@@ -64,4 +64,4 @@ const RecordUploader: React.FC<RecordUploaderProps> = () => {
   );
 }
 
-export default RecordUploader;
+export default CandleUploader;
