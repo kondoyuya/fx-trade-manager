@@ -26,4 +26,35 @@ pub const TABLES: &[&str] = &[
         spread INTEGER
     )
     "#,
+
+    // 注文・決済のペアで管理する
+    r#"
+    CREATE TABLE IF NOT EXISTS trades(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pair TEXT NOT NULL,
+        side TEXT NOT NULL,         -- 買 or 売, エントリーの方向
+        lot REAL NOT NULL,
+        entry_rate REAL NOT NULL,
+        exit_rate REAL NOT NULL,
+        profit INTEGER NOT NULL,
+        profit_pips REAL NOT NULL,
+        swap INTEGER,
+        memo TEXT
+    )
+    "#,
+
+    r#"
+    CREATE TABLE IF NOT EXISTS labels(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL
+    )
+    "#,
+
+    r#"
+    CREATE TABLE IF NOT EXISTS trade_labels(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trade_id INTEGER NOT NULL,
+        label_id INTEGER NOT NULL
+    )
+    "#,
 ];
