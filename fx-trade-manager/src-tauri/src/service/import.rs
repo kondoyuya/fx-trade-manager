@@ -1,7 +1,8 @@
 use crate::db::DbState;
-use crate::db::queries::{records, candles};
+use crate::db::queries::{records, candles, trades};
 use crate::models::db::record::Record;
 use crate::models::db::candle::Candle;
+use crate::models::db::trade::Trade;
 use crate::utils::time_utils::{jst_str_to_unix};
 use std::fs::File;
 use csv::ReaderBuilder;
@@ -13,8 +14,13 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         .from_path(csv_path)
         .map_err(|e| e.to_string())?;
 
-    for result in rdr.records() {
-        let row = result.map_err(|e| e.to_string())?;
+    let mut prev = Record{..Default::default()};
+
+    // 時系列でデータを読む
+    let records: Vec<_> = rdr.records().collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    for row in records.iter().rev() {
         let order_time_str = row.get(8).unwrap_or("").to_string();
 
         // JST → UNIX TIME に変換
@@ -31,7 +37,29 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
             order_time: order_time_unix,
             ..Default::default()
         };
-        records::insert_record(db, record)?;
+        records::insert_record(db, &record)?;
+
+        // 決済のレコードだった場合はtradeテーブルへのinsertも行う
+        if (row.get(2).unwrap_or("").to_string() == "決済") {
+            let direction = if prev.side == "買" { 1.0 } else { -1.0 };
+            let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
+            let trade = Trade {
+                pair: record.pair.clone(),
+                side: record.side.clone(),
+                lot: record.lot,
+                entry_rate: prev.rate,
+                exit_rate: record.rate,
+                entry_time: prev.order_time,
+                exit_time: record.order_time,
+                profit: record.profit.unwrap_or(0),
+                profit_pips: profit_pips,
+                swap: record.swap,
+                ..Default::default()
+            };
+            trades::insert_trade(db, trade)?;
+        }
+
+        prev = record;
     }
 
     Ok(())

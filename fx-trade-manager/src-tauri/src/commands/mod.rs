@@ -6,8 +6,13 @@ macro_rules! register_commands {
             crate::commands::records_cmd::insert_record,
             crate::commands::records_cmd::insert_candle,
             crate::commands::records_cmd::get_all_records,
+            crate::commands::records_cmd::get_all_trades,
             crate::commands::records_cmd::get_daily_records,
             crate::commands::records_cmd::get_candles,
+            crate::commands::records_cmd::add_label,
+            crate::commands::records_cmd::get_all_labels,
+            crate::commands::records_cmd::get_all_labels_with_trade,
+            crate::commands::records_cmd::add_trade_label,
         ])
     };
 }

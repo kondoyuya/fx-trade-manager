@@ -7,4 +7,4 @@ export interface DailySummary {
   
 }
 
-export type Tab = "calendar" | "history" | "settings" | "chart" | "import";
+export type Tab = "calendar" | "history" | "statistics" | "chart" | "import";
