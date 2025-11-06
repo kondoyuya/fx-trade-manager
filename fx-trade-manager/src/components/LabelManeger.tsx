@@ -1,96 +1,135 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { AddLabelButton } from "../components/AddLabelButton";
 
-export default function LabelManager() {
-  const [showPopup, setShowPopup] = useState(false);
-  const [newLabelName, setNewLabelName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+interface Trade {
+  id: number;
+  pair: string;
+  side: string;
+  lot: number;
+  entry_rate: number;
+  exit_rate: number;
+  entry_time: number;
+  exit_time: number;
+  profit: number;
+  swap: number;
+  memo: string;
+}
 
-  // --- ラベル追加処理 ---
-  async function handleAddLabel() {
-    if (!newLabelName.trim()) {
-      setError("ラベル名を入力してください");
-      return;
+interface Label {
+  id: number;
+  name: string;
+  trades: Trade[];
+}
+
+const LabelManager: React.FC = () => {
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState<Label | null>(null);
+
+  useEffect(() => {
+    async function fetchLabels() {
+      try {
+        const data = await invoke<Label[]>("get_all_labels_with_trade");
+        console.log("📄 Labels fetched:", data);
+        setLabels(data);
+      } catch (error) {
+        console.error("❌ Failed to fetch labels:", error);
+      }
     }
 
-    try {
-      setLoading(true);
-      setError(null);
-
-      await invoke("add_label", ({ name: newLabelName }));
-
-      setNewLabelName("");
-      setShowPopup(false); // 登録成功したら閉じる
-    } catch (err) {
-      console.error(err);
-      setError("登録に失敗しました");
-    } finally {
-      setLoading(false);
-    }
-  }
+    fetchLabels();
+  }, []);
 
   return (
-    <div className="p-4">
+    <div className="p-4 space-y-4">
+      {/* ラベル追加ボタン */}
       <div className="flex justify-between items-center mb-3">
-        <button
-          onClick={() => setShowPopup(true)}
-          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-        >
-          ＋ ラベル追加
-        </button>
+        <AddLabelButton
+          onAdded={(name) => {
+            setLabels((prev) => [...prev, { id: Date.now(), name, trades: [] }]);
+          }}
+        />
       </div>
 
       {/* ラベル一覧 */}
-      <ul className="space-y-1">
+      <ul className="flex flex-wrap gap-2">
         {labels.map((label) => (
           <li
             key={label.id}
-            className="px-3 py-1 bg-gray-100 rounded hover:bg-gray-200"
+            className={`px-3 py-1 rounded-full cursor-pointer text-sm shadow-sm transition 
+              ${
+                selectedLabel?.id === label.id
+                  ? "bg-blue-400 text-white"
+                  : "bg-gray-100 hover:bg-blue-100"
+              }`}
+            onClick={() =>
+              setSelectedLabel(selectedLabel?.id === label.id ? null : label)
+            }
           >
             {label.name}
           </li>
         ))}
       </ul>
 
-      {/* ポップアップ */}
-      {showPopup && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-          <div className="bg-white rounded-xl shadow-lg p-6 w-80">
-            <h3 className="text-lg font-bold mb-4">ラベルを追加</h3>
+      {/* 選択中ラベルのトレード一覧 */}
+      {selectedLabel && (
+        <div className="mt-4 p-3 border rounded-lg bg-gray-50 shadow-sm">
+          <h2 className="font-semibold text-lg mb-2">
+            {selectedLabel.name} のトレード一覧
+          </h2>
 
-            <input
-              type="text"
-              value={newLabelName}
-              onChange={(e) => setNewLabelName(e.target.value)}
-              placeholder="ラベル名を入力"
-              className="border rounded w-full p-2 mb-3"
-              disabled={loading}
-            />
-
-            {error && (
-              <p className="text-red-500 text-sm mb-2">{error}</p>
-            )}
-
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setShowPopup(false)}
-                className="px-3 py-1 border rounded hover:bg-gray-100"
-                disabled={loading}
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleAddLabel}
-                className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
-                disabled={loading}
-              >
-                {loading ? "登録中..." : "登録"}
-              </button>
-            </div>
-          </div>
+          {selectedLabel.trades.length > 0 ? (
+            <table className="min-w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-200 text-gray-700">
+                  <th className="border px-2 py-1">ペア</th>
+                  <th className="border px-2 py-1">売買</th>
+                  <th className="border px-2 py-1">ロット</th>
+                  <th className="border px-2 py-1">利益</th>
+                  <th className="border px-2 py-1">エントリー</th>
+                  <th className="border px-2 py-1">決済</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedLabel.trades.map((trade) => (
+                  <tr key={trade.id} className="hover:bg-gray-100">
+                    <td className="border px-2 py-1 text-center">
+                      {trade.pair}
+                    </td>
+                    <td
+                      className={`border px-2 py-1 text-center font-semibold ${
+                        trade.side === "BUY"
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {trade.side}
+                    </td>
+                    <td className="border px-2 py-1 text-right">{trade.lot}</td>
+                    <td
+                      className={`border px-2 py-1 text-right ${
+                        trade.profit >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {trade.profit.toFixed(2)}
+                    </td>
+                    <td className="border px-2 py-1 text-center">
+                      {new Date(trade.entry_time * 1000).toLocaleString()}
+                    </td>
+                    <td className="border px-2 py-1 text-center">
+                      {new Date(trade.exit_time * 1000).toLocaleString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-500 text-sm">トレードがありません。</p>
+          )}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default LabelManager;

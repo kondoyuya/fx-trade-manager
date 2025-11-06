@@ -1,6 +1,7 @@
 use crate::db::DbState;
-use crate::db::queries::records;
+use crate::db::queries::{ records, trades };
 use crate::models::db::record::Record;
+use crate::models::db::trade::Trade;
 use crate::models::service::daily_summary::DailySummary;
 use crate::utils::time_utils::{get_business_date_from_unix};
 use std::collections::HashMap;
@@ -8,6 +9,11 @@ use std::collections::HashMap;
 pub fn fetch_all_records(db: &DbState) -> Result<Vec<Record>, String> {
     records::get_all_records(db)
 }
+
+pub fn fetch_all_trades(db: &DbState) -> Result<Vec<Trade>, String> {
+    trades::get_all_trades(db)
+}
+
 
 pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
     let records_result = records::get_all_records(db);

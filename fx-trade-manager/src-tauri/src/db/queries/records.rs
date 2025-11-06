@@ -3,7 +3,6 @@ use rusqlite::{params, Result};
 use crate::db::DbState;
 use crate::models::db::record::Record;
 
-
 pub fn insert_record(state: &DbState, record: &Record) -> Result<(), String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
     state.execute(
