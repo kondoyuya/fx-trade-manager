@@ -1,5 +1,5 @@
 use crate::db::DbState;
-use crate::db::queries::{ labels, trades, trade_label };
+use crate::db::queries::{ trades, trade_label };
 use crate::models::db::label::Label;
 use crate::models::service::label_with_trade::LabelWithTrade;
 

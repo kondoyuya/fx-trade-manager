@@ -40,7 +40,7 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         records::insert_record(db, &record)?;
 
         // 決済のレコードだった場合はtradeテーブルへのinsertも行う
-        if (row.get(2).unwrap_or("").to_string() == "決済") {
+        if row.get(2).unwrap_or("").to_string() == "決済" {
             let direction = if prev.side == "買" { 1.0 } else { -1.0 };
             let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
             let trade = Trade {
