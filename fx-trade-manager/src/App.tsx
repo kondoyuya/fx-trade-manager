@@ -3,6 +3,7 @@ import CalendarPage from "./pages/CalendarPage";
 import HistoryPage from "./pages/HistoryPage";
 import ChartPage from "./pages/ChartPage";
 import ImportPage from "./pages/ImportPage";
+import StatisticsPage from "./pages/StatisticsPage";
 import { Tab } from "./types";
 import './index.css';
 
@@ -52,6 +53,14 @@ function App() {
           >
             💼 インポート
           </button>
+          <button
+            className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
+              activeTab === "statistics" ? "bg-gray-700" : ""
+            }`}
+            onClick={() => setActiveTab("statistics")}
+          >
+            🔎 統計
+          </button>
         </nav>
 
         {/* フッター */}
@@ -66,6 +75,7 @@ function App() {
         {activeTab === "history" && <HistoryPage />}
         {activeTab === "chart" && <ChartPage />}
         {activeTab === "import" && <ImportPage />}
+        {activeTab === "statistics" && <StatisticsPage />}
       </main>
     </div>
   );
