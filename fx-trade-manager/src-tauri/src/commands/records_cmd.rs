@@ -1,38 +1,80 @@
 use crate::db::DbState;
-use crate::service::import::{import_csv_to_db, import_candle_to_db};
-use crate::service::records::{fetch_all_records, fetch_daily_records};
-use crate::service::candles::{fetch_candles};
 use tauri::State;
 use crate::models::db::record::Record;
 use crate::models::db::candle::Candle;
+use crate::models::db::trade::Trade;
+use crate::models::db::label::Label;
 use crate::models::service::daily_summary::DailySummary;
+use crate::models::service::label_with_trade::LabelWithTrade;
 
 #[tauri::command]
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
     let db = &*state;
-    import_csv_to_db(db, csv_path)
+    crate::service::import::import_csv_to_db(db, csv_path)
 }
 
 #[tauri::command]
 pub fn insert_candle(state: State<DbState>, csv_path: &str) -> Result<(), String> {
     let db = &*state;
-    import_candle_to_db(db, csv_path)
+    crate::service::import::import_candle_to_db(db, csv_path)
 }
 
 #[tauri::command]
 pub fn get_all_records(state: State<DbState>) -> Result<Vec<Record>, String> {
     let db = &*state;
-    fetch_all_records(db)
+    crate::service::records::fetch_all_records(db)
+}
+
+#[tauri::command]
+pub fn get_all_trades(state: State<DbState>) -> Result<Vec<Trade>, String> {
+    let db = &*state;
+    crate::service::records::fetch_all_trades(db)
 }
 
 #[tauri::command]
 pub fn get_daily_records(state: State<DbState>) -> Result<Vec<DailySummary>, String> {
     let db = &*state;
-    fetch_daily_records(db)
+    crate::service::records::fetch_daily_records(db)
 }
 
 #[tauri::command]
 pub fn get_candles(state: State<DbState>) -> Result<Vec<Candle>, String> {
     let db = &*state;
-    fetch_candles(db)
+    crate::service::candles::fetch_candles(db)
+}
+
+#[tauri::command]
+pub fn add_label(state: State<DbState>, name: &str) -> Result<(), String> {
+    let db = &*state;
+    crate::service::labels::insert_label(db, name)
+}
+
+#[tauri::command]
+pub fn add_trade_label(state: State<DbState>, trade_id: i32, label_id: i32) -> Result<(), String> {
+    let db = &*state;
+    crate::service::labels::insert_trade_label(db, trade_id, label_id)
+}
+
+#[tauri::command]
+pub fn delete_trade_label(state: State<DbState>, trade_id: i32, label_id: i32) -> Result<(), String> {
+    let db = &*state;
+    crate::service::labels::delete_trade_label(db, trade_id, label_id)
+}
+
+#[tauri::command]
+pub fn get_labels_for_trade(state: State<DbState>, trade_id: i32) -> Result<Vec<i32>, String> {
+    let db = &*state;
+    crate::service::labels::get_labels_for_trade(db, trade_id)
+}
+
+#[tauri::command]
+pub fn get_all_labels(state: State<DbState>) -> Result<Vec<Label>, String> {
+    let db = &*state;
+    crate::service::labels::fetch_all_labels(db)
+}
+
+#[tauri::command]
+pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelWithTrade>, String> {
+    let db = &*state;
+    crate::service::labels::fetch_all_label_with_trade(db)
 }

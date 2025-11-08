@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { LabelSelectPopup } from "../components/LabelSelectButton";
 
-interface Record {
+interface Trade {
   id: number;
   pair: string;
   side: string;
-  trade_type: string;
   lot: number;
-  rate: number;
-  profit?: number;
-  swap?: number;
-  order_time: number;
+  entry_rate: number;
+  exit_rate: number;
+  entry_time: number;
+  exit_time: number;
+  profit: number;
+  swap: number;
+  memo: string;
 }
 
 function unixToJstString(unix: number): string {
-  const date = new Date(unix * 1000); // JSではミリ秒
+  const date = new Date(unix * 1000);
   return date.toLocaleString("ja-JP", {
     year: "numeric",
     month: "2-digit",
@@ -23,59 +26,98 @@ function unixToJstString(unix: number): string {
     minute: "2-digit",
     second: "2-digit",
     hour12: false,
-    timeZone: "Asia/Tokyo" // JSTを明示
+    timeZone: "Asia/Tokyo",
   });
 }
 
-interface HistoryListProps {}
+const HistoryList: React.FC = () => {
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [showPopup, setShowPopup] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
-const HistoryList: React.FC<HistoryListProps> = () => {
-  const [records, setRecords] = useState<Record[]>([]);
-
+  // 初期ロード：トレード一覧
   useEffect(() => {
-    async function fetchRecords() {
+    async function fetchTrades() {
       try {
-        const data = await invoke<Record[]>("get_all_records");
-        console.log("📄 Records fetched:", data);
-        setRecords(data);
+        const data = await invoke<Trade[]>("get_all_trades");
+        setTrades(data);
       } catch (error) {
-        console.error("❌ Failed to fetch records:", error);
+        console.error("❌ Failed to fetch trades:", error);
       }
     }
-
-    fetchRecords();
+    fetchTrades();
   }, []);
 
   return (
     <main className="container mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Records</h1>
-    　<p className="mb-4">Total records: {records.length}</p>
+      <h1 className="text-xl font-bold mb-4">Trades</h1>
+      <p className="mb-4">Total trades: {trades.length}</p>
+
       <table className="table-auto border-collapse border border-gray-300 w-full">
         <thead>
           <tr className="bg-gray-100">
-            {["ID","Pair","Side","Type","Lot","Rate","Profit","Swap","Order Time"].map((h) => (
-              <th key={h} className="border border-gray-300 p-2">{h}</th>
+            {[
+              "ID",
+              "Pair",
+              "Side",
+              "Lot",
+              "Entry Rate",
+              "Exit Rate",
+              "Entry Time",
+              "Exit Time",
+              "Profit",
+              "Swap",
+              "Memo",
+              "Label",
+            ].map((h) => (
+              <th key={h} className="border border-gray-300 p-2">
+                {h}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {records.map((r) => (
+          {trades.map((r) => (
             <tr key={r.id}>
               <td className="border border-gray-300 p-2">{r.id}</td>
               <td className="border border-gray-300 p-2">{r.pair}</td>
               <td className="border border-gray-300 p-2">{r.side}</td>
-              <td className="border border-gray-300 p-2">{r.trade_type}</td>
               <td className="border border-gray-300 p-2">{r.lot}</td>
-              <td className="border border-gray-300 p-2">{r.rate}</td>
-              <td className="border border-gray-300 p-2">{r.profit ?? "-"}</td>
-              <td className="border border-gray-300 p-2">{r.swap ?? "-"}</td>
-              <td className="border border-gray-300 p-2">{unixToJstString(r.order_time)}</td>
+              <td className="border border-gray-300 p-2">{r.entry_rate}</td>
+              <td className="border border-gray-300 p-2">{r.exit_rate}</td>
+              <td className="border border-gray-300 p-2">
+                {unixToJstString(r.entry_time)}
+              </td>
+              <td className="border border-gray-300 p-2">
+                {unixToJstString(r.exit_time)}
+              </td>
+              <td className="border border-gray-300 p-2">{r.profit}</td>
+              <td className="border border-gray-300 p-2">{r.swap}</td>
+              <td className="border border-gray-300 p-2">{r.memo}</td>
+              <td className="border border-gray-300 p-2">
+                <button
+                  onClick={() => {
+                    setSelectedTrade(r);
+                    setShowPopup(true);
+                  }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                >
+                  ＋ ラベル登録
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {showPopup && (
+        <LabelSelectPopup
+          trade={selectedTrade}
+          onClose={() => setShowPopup(false)}
+        />
+      )}
     </main>
   );
-}
+};
 
 export default HistoryList;
