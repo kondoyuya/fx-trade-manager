@@ -22,18 +22,38 @@ interface Trade {
 
 interface LabelSelectPopupProps {
     trade: Trade | null;
-    labels: Label[];
     onClose: () => void;
 }
 
 export const LabelSelectPopup: React.FC<LabelSelectPopupProps> = ({
     trade,
-    labels,
     onClose,
 }) => {
+    const [labels, setLabels] = useState<Label[]>([]);
     const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // すべてのラベル + トレードに紐づくラベルを取得
+    useEffect(() => {
+        async function fetchLabels() {
+            if (!trade) return;
+            try {
+                const allLabels = await invoke<Label[]>("get_all_labels");
+                setLabels(allLabels);
+
+                const tradeLabelIds = await invoke<number[]>(
+                    "get_labels_for_trade",
+                    { tradeId: trade.id }
+                );
+                setSelectedLabelIds(tradeLabelIds);
+            } catch (error) {
+                console.error("❌ Failed to fetch labels:", error);
+            }
+        }
+        fetchLabels();
+    }, [trade]);
+
+    // ラベル選択トグル
     function toggleLabelSelection(labelId: number) {
         setSelectedLabelIds((prev) =>
             prev.includes(labelId)
@@ -42,23 +62,46 @@ export const LabelSelectPopup: React.FC<LabelSelectPopupProps> = ({
         );
     }
 
+    // 登録・解除処理
     async function handleRegister() {
-        console.log("selectedTrade:", trade);
-        console.log("selectedLabel:", selectedLabelIds);
-        if (!trade || selectedLabelIds.length === 0) return;
-
+        if (!trade) return;
         setLoading(true);
+
         try {
-            for (const labelId of selectedLabelIds) {
+            // 現在の登録済みラベルを取得
+            const currentLabels = await invoke<number[]>(
+                "get_labels_for_trade",
+                { tradeId: trade.id }
+            );
+
+            // 差分を計算
+            const toAdd = selectedLabelIds.filter(
+                (id) => !currentLabels.includes(id)
+            );
+            const toRemove = currentLabels.filter(
+                (id) => !selectedLabelIds.includes(id)
+            );
+
+            // 追加
+            for (const labelId of toAdd) {
                 await invoke("add_trade_label", {
                     tradeId: trade.id,
                     labelId,
                 });
             }
+
+            // 削除
+            for (const labelId of toRemove) {
+                await invoke("delete_trade_label", {
+                    tradeId: trade.id,
+                    labelId,
+                });
+            }
+
             onClose();
         } catch (error) {
-            console.error("❌ Failed to register labels:", error);
-            alert("ラベル登録に失敗しました。");
+            console.error("❌ Failed to update labels:", error);
+            alert("ラベルの更新に失敗しました。");
         } finally {
             setLoading(false);
         }
@@ -67,8 +110,10 @@ export const LabelSelectPopup: React.FC<LabelSelectPopupProps> = ({
     return (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-                <h2 className="text-lg font-bold mb-3">ラベルを登録</h2>
-                <p className="text-sm text-gray-500 mb-3">トレードID: {trade?.id}</p>
+                <h2 className="text-lg font-bold mb-3">ラベルを編集</h2>
+                <p className="text-sm text-gray-500 mb-3">
+                    トレードID: {trade?.id}
+                </p>
 
                 <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2">
                     {labels.length > 0 ? (
@@ -86,7 +131,9 @@ export const LabelSelectPopup: React.FC<LabelSelectPopupProps> = ({
                             </div>
                         ))
                     ) : (
-                        <p className="text-gray-400 text-sm">ラベルがありません。</p>
+                        <p className="text-gray-400 text-sm">
+                            ラベルがありません。
+                        </p>
                     )}
                 </div>
 
@@ -99,16 +146,14 @@ export const LabelSelectPopup: React.FC<LabelSelectPopupProps> = ({
                     </button>
                     <button
                         onClick={handleRegister}
-                        disabled={selectedLabelIds.length === 0 || loading}
+                        disabled={loading}
                         className={`px-3 py-1 rounded text-white ${
-                            selectedLabelIds.length === 0 || loading
+                            loading
                                 ? "bg-blue-300 cursor-not-allowed"
                                 : "bg-blue-600 hover:bg-blue-700"
                         }`}
                     >
-                        {loading
-                            ? "登録中..."
-                            : `登録（${selectedLabelIds.length}件）`}
+                        {loading ? "更新中..." : "登録を更新"}
                     </button>
                 </div>
             </div>

@@ -16,11 +16,6 @@ interface Trade {
   memo: string;
 }
 
-interface Label {
-  id: number;
-  name: string;
-}
-
 function unixToJstString(unix: number): string {
   const date = new Date(unix * 1000);
   return date.toLocaleString("ja-JP", {
@@ -37,11 +32,8 @@ function unixToJstString(unix: number): string {
 
 const HistoryList: React.FC = () => {
   const [trades, setTrades] = useState<Trade[]>([]);
-  const [labels, setLabels] = useState<Label[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  // ✅ 複数選択対応
-  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
 
   // 初期ロード：トレード一覧
   useEffect(() => {
@@ -55,52 +47,6 @@ const HistoryList: React.FC = () => {
     }
     fetchTrades();
   }, []);
-
-  // ポップアップ表示時にラベル一覧を取得
-  useEffect(() => {
-    if (showPopup) {
-      async function fetchLabels() {
-        try {
-          const data = await invoke<Label[]>("get_all_labels");
-          console.log("fetch labels", data);
-          setLabels(data);
-        } catch (error) {
-          console.error("❌ Failed to fetch labels:", error);
-        }
-      }
-      fetchLabels();
-    }
-  }, [showPopup]);
-
-  // ✅ ラベル選択トグル
-  function toggleLabelSelection(labelId: number) {
-    setSelectedLabelIds((prev) =>
-      prev.includes(labelId)
-        ? prev.filter((id) => id !== labelId) // 選択解除
-        : [...prev, labelId] // 選択追加
-    );
-  }
-
-  // ✅ 複数ラベル登録処理
-  async function handleRegisterLabel() {
-    if (!selectedTrade || selectedLabelIds.length === 0) return;
-
-    try {
-      // 複数ラベルを順次登録
-      for (const labelId of selectedLabelIds) {
-        await invoke("add_trade_label", {
-          tradeId: selectedTrade.id,
-          labelId,
-        });
-      }
-      setShowPopup(false);
-      setSelectedTrade(null);
-      setSelectedLabelIds([]);
-    } catch (error) {
-      console.error("❌ Failed to register labels:", error);
-      alert("ラベル登録に失敗しました。");
-    }
-  }
 
   return (
     <main className="container mx-auto p-4">
@@ -167,7 +113,6 @@ const HistoryList: React.FC = () => {
       {showPopup && (
         <LabelSelectPopup
           trade={selectedTrade}
-          labels={labels}
           onClose={() => setShowPopup(false)}
         />
       )}

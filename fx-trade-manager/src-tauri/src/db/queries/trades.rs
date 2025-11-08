@@ -92,7 +92,6 @@ pub fn get_trades_by_label(state: &DbState, label_id: i32) -> Result<Vec<Trade>,
 
     let mut trades = Vec::new();
     for r in rows {
-        let trades = 
         trades.push(r.map_err(|e| e.to_string())?);
     }
     Ok(trades)

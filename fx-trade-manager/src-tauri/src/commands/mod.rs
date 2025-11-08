@@ -13,6 +13,8 @@ macro_rules! register_commands {
             crate::commands::records_cmd::get_all_labels,
             crate::commands::records_cmd::get_all_labels_with_trade,
             crate::commands::records_cmd::add_trade_label,
+            crate::commands::records_cmd::delete_trade_label,
+            crate::commands::records_cmd::get_labels_for_trade,
         ])
     };
 }
