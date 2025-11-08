@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { LabelSelectPopup } from "../components/LabelSelectButton";
 
 interface Trade {
   id: number;
@@ -39,7 +40,8 @@ const HistoryList: React.FC = () => {
   const [labels, setLabels] = useState<Label[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-  const [selectedLabelId, setSelectedLabelId] = useState<number | null>(null);
+  // ✅ 複数選択対応
+  const [selectedLabelIds, setSelectedLabelIds] = useState<number[]>([]);
 
   // 初期ロード：トレード一覧
   useEffect(() => {
@@ -60,7 +62,7 @@ const HistoryList: React.FC = () => {
       async function fetchLabels() {
         try {
           const data = await invoke<Label[]>("get_all_labels");
-          console.log("fetch labels", data)
+          console.log("fetch labels", data);
           setLabels(data);
         } catch (error) {
           console.error("❌ Failed to fetch labels:", error);
@@ -70,21 +72,32 @@ const HistoryList: React.FC = () => {
     }
   }, [showPopup]);
 
-  // ラベル登録処理
+  // ✅ ラベル選択トグル
+  function toggleLabelSelection(labelId: number) {
+    setSelectedLabelIds((prev) =>
+      prev.includes(labelId)
+        ? prev.filter((id) => id !== labelId) // 選択解除
+        : [...prev, labelId] // 選択追加
+    );
+  }
+
+  // ✅ 複数ラベル登録処理
   async function handleRegisterLabel() {
-    if (!selectedTrade || selectedLabelId === null) return;
+    if (!selectedTrade || selectedLabelIds.length === 0) return;
 
     try {
-      await invoke("add_trade_label", {
-        tradeId: selectedTrade.id,
-        labelId: selectedLabelId,
-      });
-      alert("✅ ラベルを登録しました！");
+      // 複数ラベルを順次登録
+      for (const labelId of selectedLabelIds) {
+        await invoke("add_trade_label", {
+          tradeId: selectedTrade.id,
+          labelId,
+        });
+      }
       setShowPopup(false);
       setSelectedTrade(null);
-      setSelectedLabelId(null);
+      setSelectedLabelIds([]);
     } catch (error) {
-      console.error("❌ Failed to register label:", error);
+      console.error("❌ Failed to register labels:", error);
       alert("ラベル登録に失敗しました。");
     }
   }
@@ -151,56 +164,12 @@ const HistoryList: React.FC = () => {
         </tbody>
       </table>
 
-      {/* ✅ ポップアップ */}
       {showPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96">
-            <h2 className="text-lg font-bold mb-3">ラベルを登録</h2>
-            <p className="text-sm text-gray-500 mb-3">
-              トレードID: {selectedTrade?.id}
-            </p>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto border rounded p-2">
-              {labels.length > 0 ? (
-                labels.map((label) => (
-                  <div
-                    key={label.id}
-                    className={`p-2 rounded cursor-pointer ${
-                      selectedLabelId === label.id
-                        ? "bg-blue-500 text-white"
-                        : "hover:bg-gray-100"
-                    }`}
-                    onClick={() => setSelectedLabelId(label.id)}
-                  >
-                    {label.name}
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-400 text-sm">ラベルがありません。</p>
-              )}
-            </div>
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowPopup(false)}
-                className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
-              >
-                キャンセル
-              </button>
-              <button
-                onClick={handleRegisterLabel}
-                disabled={selectedLabelId === null}
-                className={`px-3 py-1 rounded text-white ${
-                  selectedLabelId === null
-                    ? "bg-blue-300 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700"
-                }`}
-              >
-                登録
-              </button>
-            </div>
-          </div>
-        </div>
+        <LabelSelectPopup
+          trade={selectedTrade}
+          labels={labels}
+          onClose={() => setShowPopup(false)}
+        />
       )}
     </main>
   );
