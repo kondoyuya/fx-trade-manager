@@ -16,6 +16,14 @@ pub fn insert_trade_label(db: &DbState, trade_id: i32, label_id: i32) -> Result<
     trade_label::insert_trade_label(db, trade_id, label_id)
 }
 
+pub fn delete_trade_label(db: &DbState, trade_id: i32, label_id: i32) -> Result<(), String> {
+    trade_label::delete_trade_label(db, trade_id, label_id)
+}
+
+pub fn get_labels_for_trade(db: &DbState, trade_id: i32) -> Result<Vec<i32>, String> {
+    trade_label::find_by_trade_id(db, trade_id)
+}
+
 pub fn fetch_all_labels(state: &DbState) -> Result<Vec<Label>, String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = state
