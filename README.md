@@ -36,7 +36,7 @@ fx-trade-manager/
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Visual Studio Build Tools](https://visualstudio.microsoft.com/ja/downloads/)
   > ※ Windows では Rust のビルドに C++ ビルドツールが必要です  
-  > → 「C++ Build Tools」を選んでインストール
+  > → Tools for Visual Studio の Build Tools for Visual Studio 2022のインストーラーからC++のビルドツールをインストール
 
 #### Rust コンポーネント
 ```
