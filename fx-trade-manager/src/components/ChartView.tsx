@@ -9,6 +9,7 @@ import {
     CandlestickData,
 } from 'lightweight-charts';
 import { invoke } from "@tauri-apps/api/core";
+import { LabelSelectPopup } from "../components/LabelSelectButton";
 
 interface ChartViewProps {}
 
@@ -161,6 +162,15 @@ const ChartView: React.FC<ChartViewProps> = () => {
     const [candleData, setCandleData] = useState<CandlestickData<Time>[]>([]);
     const [searchTime, setSearchTime] = useState<string>("");
     const [trades, setTrades] = useState<Trade[]>([]);
+    const [visibleTrades, setVisibleTrades] = useState<Trade[]>([]);
+    const [showPopup, setShowPopup] = useState(false);
+    const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+
+    // ラベル登録ボタンが押されたとき
+    const handleLabelClick = (trade: Trade) => {
+        setSelectedTrade(trade);
+        setShowPopup(true);
+    };
 
     // --- (1) DBからデータを取得 ---
     useEffect(() => {
@@ -236,6 +246,36 @@ const ChartView: React.FC<ChartViewProps> = () => {
         }
     }, [trades]); // tradesデータが入ったら実行
 
+    // 描画範囲のトレード一覧を取得
+    useEffect(() => {
+        const chart = chartRef.current;
+        if (!chart || trades.length === 0) return;
+
+        const updateVisibleTrades = () => {
+            const range = chart.timeScale().getVisibleRange();
+            if (!range) return;
+
+            const fromUnix = (range.from as number) - 3600 * 9;
+            const toUnix = (range.to as number) - 3600 * 9;
+
+            const filtered = trades.filter(
+                (t) =>
+                    (t.entry_time >= fromUnix && t.entry_time <= toUnix) ||
+                    (t.exit_time >= fromUnix && t.exit_time <= toUnix)
+            );
+            setVisibleTrades(filtered);
+        };
+
+        // 初回 + 監視登録
+        updateVisibleTrades();
+        chart.timeScale().subscribeVisibleTimeRangeChange(updateVisibleTrades);
+
+        // クリーンアップ時に解除
+        return () => {
+            chart.timeScale().unsubscribeVisibleTimeRangeChange(updateVisibleTrades);
+        };
+    }, [trades, candleData]);
+
     // --- (3) 指定時刻検索 ---
     const handleSearch = () => {
         if (!chartRef.current || candleData.length === 0 || !searchTime) return;
@@ -279,6 +319,64 @@ const ChartView: React.FC<ChartViewProps> = () => {
 
             {/* 📈 チャート本体 */}
             <div ref={chartContainerRef} style={{ width: "800px", height: "600px" }} />
+
+            {/* 💹 可視範囲内トレード一覧 */}
+            <div className="w-[800px] mt-4 border p-2 rounded bg-gray-50">
+                <h2 className="font-bold mb-2">現在画面内のトレード</h2>
+                {visibleTrades.length === 0 ? (
+                    <p className="text-gray-500">表示範囲内にトレードはありません。</p>
+                ) : (
+                    <table className="w-full text-sm border-collapse">
+                        <thead>
+                            <tr className="border-b bg-gray-200">
+                                <th className="p-1">#</th>
+                                <th className="p-1">通貨ペア</th>
+                                <th className="p-1">売買</th>
+                                <th className="p-1">Lot</th>
+                                <th className="p-1">Entry</th>
+                                <th className="p-1">Exit</th>
+                                <th className="p-1">損益</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {visibleTrades.map((t) => (
+                                <tr key={t.id} className="border-b">
+                                    <td className="p-1 text-center">{t.id}</td>
+                                    <td className="p-1 text-center">{t.pair}</td>
+                                    <td className={`p-1 text-center ${t.side === "買" ? "text-red-600" : "text-blue-600"}`}>
+                                        {t.side}
+                                    </td>
+                                    <td className="p-1 text-right">{t.lot}</td>
+                                    <td className="p-1 text-right">{new Date(t.entry_time * 1000).toLocaleString()}</td>
+                                    <td className="p-1 text-right">{new Date(t.exit_time * 1000).toLocaleString()}</td>
+                                    <td
+                                        className={`p-1 text-right ${
+                                            t.profit >= 0 ? "text-green-600" : "text-red-600"
+                                        }`}
+                                    >
+                                        {t.profit.toFixed(0)}
+                                    </td>
+                                    <td className="p-1 text-center">
+                                        <button
+                                            onClick={() => handleLabelClick(t)}
+                                            className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+                                        >
+                                            ラベル登録
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+
+                        {showPopup && selectedTrade && (
+            <LabelSelectPopup
+                trade={selectedTrade}
+                onClose={() => setShowPopup(false)}
+            />
+        )}
+            </div>
         </div>
     );
 };
