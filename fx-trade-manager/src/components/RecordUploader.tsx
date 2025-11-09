@@ -49,7 +49,6 @@ const RecordUploader: React.FC<RecordUploaderProps> = () => {
         <p className="text-gray-500 text-sm">
           ファイルを選択して内容を読み込みます。
           現在対応している口座はDMMのみです。
-          取引データのCSVをUTF-8に変換してアップロードしてください。
         </p>
 
         {/* ファイル内容 */}

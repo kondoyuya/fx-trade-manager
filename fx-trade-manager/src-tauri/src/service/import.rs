@@ -8,12 +8,19 @@ use std::fs::File;
 use csv::ReaderBuilder;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Europe::Helsinki;
+use encoding_rs::SHIFT_JIS;
+use encoding_rs_io::DecodeReaderBytesBuilder;
 
 pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
-    let mut rdr = csv::ReaderBuilder::new()
+    // SJIS → UTF-8 デコード
+    let file = File::open(csv_path).map_err(|e| e.to_string())?;
+    let transcoded = DecodeReaderBytesBuilder::new()
+        .encoding(Some(SHIFT_JIS))
+        .build(file);
+
+    let mut rdr = ReaderBuilder::new()
         .has_headers(true)
-        .from_path(csv_path)
-        .map_err(|e| e.to_string())?;
+        .from_reader(transcoded);
 
     let mut prev = Record{..Default::default()};
 
@@ -33,8 +40,8 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
             trade_type: row.get(2).unwrap_or("").to_string(),
             lot: row.get(3).unwrap_or("0").parse::<f64>().unwrap_or(0.0),
             rate: row.get(4).unwrap_or("0").parse::<f64>().unwrap_or(0.0),
-            profit: row.get(5).and_then(|s| s.parse::<i32>().ok()),
-            swap: row.get(6).and_then(|s| s.parse::<i32>().ok()),
+            profit: parse_i32_from_csv(row.get(5).unwrap_or("")),
+            swap: parse_i32_from_csv(row.get(6).unwrap_or("")),
             order_time: order_time_unix,
             ..Default::default()
         };
@@ -64,6 +71,26 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
     }
 
     Ok(())
+}
+
+fn parse_i32_from_csv(s: &str) -> Option<i32> {
+    // trim & remove common noise: backslash, commas, currency symbols, whitespace
+    let s = s.trim()
+        .replace('\\', "")
+        .replace(',', "")
+        .replace('¥', "")
+        .replace('￥', "")
+        .replace('\u{FF0B}', "+")
+        .replace('\u{FF0D}', "-");
+
+    let cleaned = if s.starts_with('(') && s.ends_with(')') {
+        format!("-{}", &s[1..s.len()-1])
+    } else {
+        s
+    };
+
+    // finally parse
+    cleaned.parse::<i32>().ok()
 }
 
 pub fn import_candle_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {

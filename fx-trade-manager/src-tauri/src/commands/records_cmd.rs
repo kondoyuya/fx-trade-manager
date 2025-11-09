@@ -5,7 +5,7 @@ use crate::models::db::candle::Candle;
 use crate::models::db::trade::Trade;
 use crate::models::db::label::Label;
 use crate::models::service::daily_summary::DailySummary;
-use crate::models::service::label_with_trade::LabelWithTrade;
+use crate::models::service::label_summary::LabelSummary;
 
 #[tauri::command]
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
@@ -74,7 +74,7 @@ pub fn get_all_labels(state: State<DbState>) -> Result<Vec<Label>, String> {
 }
 
 #[tauri::command]
-pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelWithTrade>, String> {
+pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelSummary>, String> {
     let db = &*state;
     crate::service::labels::fetch_all_label_with_trade(db)
 }

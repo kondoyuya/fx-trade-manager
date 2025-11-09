@@ -16,20 +16,27 @@ interface Trade {
   memo: string;
 }
 
-interface Label {
+interface LabelSummary {
   id: number;
   name: string;
+  profit: number;
+  profit_pips: number;
+  count: number;
+  wins: number;
+  losses: number;
+  total_holding_time: number;
   trades: Trade[];
 }
 
 const LabelManager: React.FC = () => {
-  const [labels, setLabels] = useState<Label[]>([]);
-  const [selectedLabel, setSelectedLabel] = useState<Label | null>(null);
+  const [labels, setLabels] = useState<LabelSummary[]>([]);
+  const [selectedLabel, setSelectedLabel] = useState<LabelSummary | null>(null);
+  const [displayMode, setDisplayMode] = useState<"円" | "pips">("円");
 
   useEffect(() => {
     async function fetchLabels() {
       try {
-        const data = await invoke<Label[]>("get_all_labels_with_trade");
+        const data = await invoke<LabelSummary[]>("get_all_labels_with_trade");
         console.log("📄 Labels fetched:", data);
         setLabels(data);
       } catch (error) {
@@ -40,13 +47,21 @@ const LabelManager: React.FC = () => {
     fetchLabels();
   }, []);
 
+  const formatHoldingTime = (seconds: number): string => {
+    const rounded = Math.round(seconds); // 小数点四捨五入
+    const min = Math.floor(rounded / 60);
+    const sec = rounded % 60;
+    return `${min}分${sec}秒`;
+  };
+
   return (
     <div className="p-4 space-y-4">
       {/* ラベル追加ボタン */}
       <div className="flex justify-between items-center mb-3">
         <AddLabelButton
           onAdded={(name) => {
-            setLabels((prev) => [...prev, { id: Date.now(), name, trades: [] }]);
+            setLabels((prev) => [...prev, { 
+              id: Date.now(), name, profit: 0, profit_pips: 0, count: 0, wins: 0, losses: 0, total_holding_time: 0,trades: [] }]);
           }}
         />
       </div>
@@ -71,6 +86,25 @@ const LabelManager: React.FC = () => {
         ))}
       </ul>
 
+      <div className="flex space-x-2 mb-2">
+        <button
+          onClick={() => setDisplayMode("円")}
+          className={`px-2 py-1 rounded ${
+            displayMode === "円" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          円
+        </button>
+        <button
+          onClick={() => setDisplayMode("pips")}
+          className={`px-2 py-1 rounded ${
+            displayMode === "pips" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          pips
+        </button>
+      </div>
+
       {/* 選択中ラベルのトレード一覧 */}
       {selectedLabel && (
         <div className="mt-4 p-3 border rounded-lg bg-gray-50 shadow-sm">
@@ -82,42 +116,51 @@ const LabelManager: React.FC = () => {
             <table className="min-w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-gray-200 text-gray-700">
-                  <th className="border px-2 py-1">ペア</th>
-                  <th className="border px-2 py-1">売買</th>
-                  <th className="border px-2 py-1">ロット</th>
-                  <th className="border px-2 py-1">利益</th>
-                  <th className="border px-2 py-1">エントリー</th>
-                  <th className="border px-2 py-1">決済</th>
+                    <th className="px-2 py-1 border-b text-center">#</th>
+                    <th className="px-2 py-1 border-b text-center">通貨ペア</th>
+                    <th className="px-2 py-1 border-b text-center">売買</th>
+                    <th className="px-2 py-1 border-b text-right">Lot</th>
+                    <th className="px-2 py-1 border-b text-right">Entry Rate</th>
+                    <th className="px-2 py-1 border-b text-right">Exit Rate</th>
+                    <th className="px-2 py-1 border-b text-right">Entry Time</th>
+                    <th className="px-2 py-1 border-b text-right">Exit Time</th>
+                    <th className="px-2 py-1 border-b text-right">損益</th>
                 </tr>
               </thead>
               <tbody>
-                {selectedLabel.trades.map((trade) => (
-                  <tr key={trade.id} className="hover:bg-gray-100">
-                    <td className="border px-2 py-1 text-center">
-                      {trade.pair}
-                    </td>
+                {selectedLabel.trades.map((t) => (
+                  <tr
+                    key={t.id}
+                    className="border-b hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-2 py-1 text-center">{t.id}</td>
+                    <td className="px-2 py-1 text-center">{t.pair}</td>
                     <td
-                      className={`border px-2 py-1 text-center font-semibold ${
-                        trade.side === "BUY"
-                          ? "text-green-600"
-                          : "text-red-600"
+                      className={`px-2 py-1 text-center font-semibold ${
+                        t.side === "買" ? "text-red-600" : "text-blue-600"
                       }`}
                     >
-                      {trade.side}
+                      {t.side}
                     </td>
-                    <td className="border px-2 py-1 text-right">{trade.lot}</td>
+                    <td className="px-2 py-1 text-right">{t.lot}</td>
+                    <td className="px-2 py-1 text-right">{t.entry_rate}</td>
+                    <td className="px-2 py-1 text-right">{t.exit_rate}</td>
+                    <td className="px-2 py-1 text-right">
+                      {new Date(t.entry_time * 1000).toLocaleTimeString()}
+                    </td>
+                    <td className="px-2 py-1 text-right">
+                      {new Date(t.exit_time * 1000).toLocaleTimeString()}
+                    </td>
                     <td
-                      className={`border px-2 py-1 text-right ${
-                        trade.profit >= 0 ? "text-green-600" : "text-red-600"
+                      className={`px-2 py-1 text-right font-semibold ${
+                        t.profit >= 0 ? "text-blue-600" : "text-red-600"
                       }`}
                     >
-                      {trade.profit.toFixed(2)}
-                    </td>
-                    <td className="border px-2 py-1 text-center">
-                      {new Date(trade.entry_time * 1000).toLocaleString()}
-                    </td>
-                    <td className="border px-2 py-1 text-center">
-                      {new Date(trade.exit_time * 1000).toLocaleString()}
+                      {(t.profit > 0 ? "+" : "") +
+                      (displayMode == "円" 
+                        ? t.profit.toFixed(0)
+                        : (t.profit / t.lot / 100).toFixed(1))
+                      }
                     </td>
                   </tr>
                 ))}
@@ -128,6 +171,33 @@ const LabelManager: React.FC = () => {
           )}
         </div>
       )}
+
+          <p>  利益:{" "}
+            {displayMode === "円"
+              ? selectedLabel?.profit ?? 0
+              : (selectedLabel?.profit_pips ?? 0) / 10
+            } {displayMode}</p>
+          <p>トレード回数: {selectedLabel?.count ?? 0}</p>
+          <p>勝ちトレード回数: {selectedLabel?.wins ?? 0}</p>
+          <p>負けトレード回数: {selectedLabel?.losses ?? 0}</p>
+          <p>
+            平均保有時間:{" "}
+            {formatHoldingTime(
+              (selectedLabel?.total_holding_time ?? 0) /
+                (selectedLabel?.count ?? 1)
+            )}
+          </p>
+          <p>
+            勝率:{" "}
+            {selectedLabel?.count ?? 0 > 0
+              ? (
+                  ((selectedLabel?.wins ?? 0) /
+                    (selectedLabel?.count ?? 1)) *
+                  100
+                ).toFixed(1)
+              : 0}
+            %
+          </p>
     </div>
   );
 };

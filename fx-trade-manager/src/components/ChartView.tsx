@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useImperativeHandle } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     createChart,
     Time,
@@ -69,12 +69,13 @@ class DebugPaneView implements IPrimitivePaneView {
                         if (entryX !== null && entryY !== null && exitX !== null && exitY !== null) {
                             ctx.strokeStyle = "black"
                             ctx.lineWidth = 2;
-                            ctx.setLineDash([]); 
+                            ctx.setLineDash([7, 3]); 
                             
                             ctx.beginPath();
                             ctx.moveTo(entryX, entryY);
                             ctx.lineTo(exitX, exitY);
                             ctx.stroke();
+                            ctx.setLineDash([]); 
                             
                             const drawArrow = (x: number, y: number, isUp: boolean, color: string) => {
                                 ctx.fillStyle = color;
@@ -218,7 +219,14 @@ const ChartView: React.FC<ChartViewProps> = () => {
                 rightOffset: 10,
             },
         });
-        const candleSeries = chart.addSeries(CandlestickSeries, {});
+        const candleSeries = chart.addSeries(CandlestickSeries, {
+            upColor: 'white',
+            borderUpColor: 'black',
+            wickUpColor: 'brack',
+            downColor: 'silver',
+            borderDownColor: 'brack',
+            wickDownColor: 'brack',
+        });
         candleSeries.setData(candleData);
 
         chartRef.current = chart;
@@ -294,8 +302,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
         console.log(closest);
 
         const rangeSize = 50; // 前後にどのくらい表示するか
-        const from = ((closest.time as number) - rangeSize * 60) as UTCTimestamp;
-        const to = ((closest.time as number) + rangeSize * 60) as UTCTimestamp;
+        const from = ((closest.time as number) - rangeSize * 60) as Time;
+        const to = ((closest.time as number) + rangeSize * 60) as Time;
         
         chartRef.current.timeScale().setVisibleRange({ from, to });
     };

@@ -30,3 +30,4 @@ serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
 directories = "5.0"
 encoding_rs = "0.8"
+encoding_rs_io = "0.1"
