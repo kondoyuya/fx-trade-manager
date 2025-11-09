@@ -9,7 +9,7 @@ export interface DailySummary {
   trades: Trade[];
 }
 
-interface Trade {
+export interface Trade {
   id: number;
   pair: string;
   side: string;

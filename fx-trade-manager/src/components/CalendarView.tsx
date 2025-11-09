@@ -84,8 +84,8 @@ const CalendarView: React.FC = () => {
             tileContent={({ date }) => {
               if (getSummaryFromDate(date) == null) return;
               const profit = displayMode === "円"
-                ? getSummaryFromDate(date).profit
-                : getSummaryFromDate(date).profit_pips / 10;
+                ? (getSummaryFromDate(date)?.profit ?? 0)
+                : (getSummaryFromDate(date)?.profit_pips ?? 0) / 10;
               if (profit === null) return null;
               const color =
                 profit > 0

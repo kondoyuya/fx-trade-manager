@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useImperativeHandle } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     createChart,
     Time,
@@ -302,8 +302,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
         console.log(closest);
 
         const rangeSize = 50; // 前後にどのくらい表示するか
-        const from = ((closest.time as number) - rangeSize * 60) as UTCTimestamp;
-        const to = ((closest.time as number) + rangeSize * 60) as UTCTimestamp;
+        const from = ((closest.time as number) - rangeSize * 60) as Time;
+        const to = ((closest.time as number) + rangeSize * 60) as Time;
         
         chartRef.current.timeScale().setVisibleRange({ from, to });
     };
