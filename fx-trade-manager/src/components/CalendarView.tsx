@@ -151,8 +151,10 @@ const CalendarView: React.FC = () => {
                     <th className="px-2 py-1 border-b text-center">通貨ペア</th>
                     <th className="px-2 py-1 border-b text-center">売買</th>
                     <th className="px-2 py-1 border-b text-right">Lot</th>
-                    <th className="px-2 py-1 border-b text-right">Entry</th>
-                    <th className="px-2 py-1 border-b text-right">Exit</th>
+                    <th className="px-2 py-1 border-b text-right">Entry Rate</th>
+                    <th className="px-2 py-1 border-b text-right">Exit Rate</th>
+                    <th className="px-2 py-1 border-b text-right">Entry Time</th>
+                    <th className="px-2 py-1 border-b text-right">Exit Time</th>
                     <th className="px-2 py-1 border-b text-right">損益</th>
                     <th className="px-2 py-1 border-b text-center">操作</th>
                   </tr>
@@ -173,6 +175,8 @@ const CalendarView: React.FC = () => {
                         {t.side}
                       </td>
                       <td className="px-2 py-1 text-right">{t.lot}</td>
+                      <td className="px-2 py-1 text-right">{t.entry_rate}</td>
+                      <td className="px-2 py-1 text-right">{t.exit_rate}</td>
                       <td className="px-2 py-1 text-right">
                         {new Date(t.entry_time * 1000).toLocaleTimeString()}
                       </td>
@@ -184,9 +188,10 @@ const CalendarView: React.FC = () => {
                           t.profit >= 0 ? "text-blue-600" : "text-red-600"
                         }`}
                       >
-                        {displayMode == "円" 
+                        {(t.profit > 0 ? "+" : "") +
+                        (displayMode == "円" 
                           ? t.profit.toFixed(0)
-                          : (t.profit / t.lot / 100).toFixed(1)
+                          : (t.profit / t.lot / 100).toFixed(1))
                         }
                       </td>
                       <td className="px-2 py-1 text-center">

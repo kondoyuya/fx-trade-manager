@@ -58,7 +58,6 @@ class DebugPaneView implements IPrimitivePaneView {
                         const isSell = (trade.side === "売");
                         const arrowSize = 10;
 
-                            // --- 1. 座標計算 (省略) ---
                         const TIME_OFFSET = 3600 * 9; 
                         const entryTimeFloor = Math.floor(trade.entry_time / 60) * 60;
                         const exitTimeFloor = Math.floor(trade.exit_time / 60) * 60;
@@ -67,10 +66,7 @@ class DebugPaneView implements IPrimitivePaneView {
                         const entryY = series.priceToCoordinate(trade.entry_rate);
                         const exitX = chart.timeScale().timeToCoordinate((exitTimeFloor + TIME_OFFSET) as Time);
                         const exitY = series.priceToCoordinate(trade.exit_rate);
-                        //console.log(entryX, entryY, exitX, entryY)
                         if (entryX !== null && entryY !== null && exitX !== null && exitY !== null) {
-                            console.log("ok")
-                            // --- 2. 2点間を点線で結ぶ ---
                             ctx.strokeStyle = "black"
                             ctx.lineWidth = 2;
                             ctx.setLineDash([]); 
@@ -85,12 +81,10 @@ class DebugPaneView implements IPrimitivePaneView {
                                 ctx.beginPath();
                                 
                                 if (isUp) {
-                                    // 上向き矢印: 頂点は下、底辺は上
                                     ctx.moveTo(x, y + arrowSize * 0.5); 
                                     ctx.lineTo(x - arrowSize * 0.5, y - arrowSize * 0.5); 
                                     ctx.lineTo(x + arrowSize * 0.5, y - arrowSize * 0.5); 
                                 } else {
-                                    // 下向き矢印: 頂点は上、底辺は下
                                     ctx.moveTo(x, y - arrowSize * 0.5); 
                                     ctx.lineTo(x - arrowSize * 0.5, y + arrowSize * 0.5); 
                                     ctx.lineTo(x + arrowSize * 0.5, y + arrowSize * 0.5); 
@@ -111,15 +105,21 @@ class DebugPaneView implements IPrimitivePaneView {
                                 ctx.stroke();
                             };
 
-                            // --- 4. エントリーポイントの矢印描画 ---
-                            // 買い (isSell=false) なら上向き (isUp=true) で緑
-                            // 売り (isSell=true) なら下向き (isUp=false) で赤
+                            const drawCircle = (x: number, y: number) => {
+                                const radius = 4;
+                                ctx.strokeStyle = "black";
+                                ctx.lineWidth = 2;
+                                ctx.beginPath();
+                                ctx.arc(x, y, radius, 0, 2 * Math.PI);
+                                ctx.stroke();
+                            };
+
                             const entryIsUp = isSell;
                             const entryColor = isSell ? 'blue' : 'red';
                             drawArrow(entryX, entryY, entryIsUp, entryColor);
                             
-                            // --- 5. イグジットポイントの矢印描画 ---
-                            drawCloss(exitX, exitY);
+                            if (trade.profit > 0) drawCircle(exitX, exitY);
+                            else drawCloss(exitX, exitY);
                         }
                     }
                 });
