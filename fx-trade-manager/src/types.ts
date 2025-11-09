@@ -4,6 +4,7 @@ export interface DailySummary {
   count: number;
   wins: number;
   losses: number;
+  total_holding_time: number;
   trades: Trade[];
 }
 

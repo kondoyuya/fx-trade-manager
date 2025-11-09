@@ -33,6 +33,24 @@ const CalendarView: React.FC = () => {
     setShowPopup(true);
   };
 
+  const formatHoldingTime = (seconds: number): string => {
+    const rounded = Math.round(seconds); // 小数点四捨五入
+    const min = Math.floor(rounded / 60);
+    const sec = rounded % 60;
+    return `${min}分${sec}秒`;
+  };
+
+  // 月間利益を計算
+  const getMonthlyProfit = (date: Date): number => {
+    const year = date.getFullYear();
+    const month = date.getMonth(); // 0-11
+    const monthlySummaries = summaries.filter((s) => {
+      const sDate = new Date(s.date);
+      return sDate.getFullYear() === year && sDate.getMonth() === month;
+    });
+    return monthlySummaries.reduce((sum, s) => sum + (s.profit ?? 0), 0);
+  };
+
   const tradesForDate = getSummaryFromDate(selectedDate)?.trades ?? [];
 
   return (
@@ -54,6 +72,14 @@ const CalendarView: React.FC = () => {
               return <p className={`text-xs ${color}`}>{profit.toFixed(0)}</p>;
             }}
           />
+          <div className="mt-4 p-2 border rounded bg-gray-50">
+            <h3 className="font-bold mb-1">
+              {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月の収支
+            </h3>
+            <p className={`font-semibold ${getMonthlyProfit(selectedDate) >= 0 ? "text-green-600" : "text-red-600"}`}>
+              {getMonthlyProfit(selectedDate).toLocaleString("ja-JP", { maximumFractionDigits: 0 })} 円
+            </p>
+          </div>
         </div>
 
         {/* 右：日付詳細 + トレード一覧 */}
@@ -63,6 +89,13 @@ const CalendarView: React.FC = () => {
           <p>トレード回数: {getSummaryFromDate(selectedDate)?.count ?? 0}</p>
           <p>勝ちトレード回数: {getSummaryFromDate(selectedDate)?.wins ?? 0}</p>
           <p>負けトレード回数: {getSummaryFromDate(selectedDate)?.losses ?? 0}</p>
+          <p>
+            平均保有時間:{" "}
+            {formatHoldingTime(
+              (getSummaryFromDate(selectedDate)?.total_holding_time ?? 0) /
+                (getSummaryFromDate(selectedDate)?.count ?? 1)
+            )}
+          </p>
           <p>
             勝率:{" "}
             {getSummaryFromDate(selectedDate)?.count ?? 0 > 0

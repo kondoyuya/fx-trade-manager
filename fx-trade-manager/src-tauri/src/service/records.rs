@@ -47,6 +47,7 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
         entry.profit += r.profit;
         entry.count += 1;
         entry.trades.push(r.clone());
+        entry.total_holding_time += r.exit_time - r.entry_time;
 
         if r.profit > 0 {
             entry.wins += 1;

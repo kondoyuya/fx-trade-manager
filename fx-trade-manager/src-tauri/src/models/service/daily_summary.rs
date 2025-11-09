@@ -11,6 +11,6 @@ pub struct DailySummary {
     pub losses: i32,          // 負けトレード回数
     pub win_total: i32,       // 勝ちトレード総額
     pub loss_total: i32,      // 負けトレード総額
-    pub total_holding_time: u64, // 合計保有時間
+    pub total_holding_time: i64, // 合計保有時間
     pub trades: Vec<Trade>,   // トレード一覧
 }
