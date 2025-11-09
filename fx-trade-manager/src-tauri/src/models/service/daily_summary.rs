@@ -1,5 +1,6 @@
 use serde::{Serialize, Deserialize};
 use chrono::{NaiveDate};
+use crate::models::db::trade::Trade;
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct DailySummary {
@@ -11,4 +12,5 @@ pub struct DailySummary {
     pub win_total: i32,       // 勝ちトレード総額
     pub loss_total: i32,      // 負けトレード総額
     pub total_holding_time: u64, // 合計保有時間
+    pub trades: Vec<Trade>,   // トレード一覧
 }

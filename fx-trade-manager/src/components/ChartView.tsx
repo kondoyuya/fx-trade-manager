@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useImperativeHandle } from "react";
 import {
     createChart,
     Time,
@@ -34,9 +34,6 @@ interface Trade {
   swap: number;
   memo: string;
 }
-
-// --- Helper to parse time ---
-const parseTime = (isoString: string) => (new Date(isoString).getTime() / 1000) as Time;
 
 // --- Primitive Classes ---
 class DebugPaneView implements IPrimitivePaneView {
@@ -153,6 +150,10 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
     paneViews() { return [this._paneView]; }
     param() { return this._param; }
     updateAllViews() {}
+}
+
+export interface ChartViewHandle {
+  scrollToTime: (unixTime: number) => void;
 }
 
 const ChartView: React.FC<ChartViewProps> = () => {

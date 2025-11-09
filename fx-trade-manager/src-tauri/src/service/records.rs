@@ -14,14 +14,13 @@ pub fn fetch_all_trades(db: &DbState) -> Result<Vec<Trade>, String> {
     trades::get_all_trades(db)
 }
 
-
 pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
-    let records_result = records::get_all_records(db);
+    let trades_result = trades::get_all_trades(db);
 
-    let records = match records_result {
+    let trades = match trades_result {
         Ok(r) => r,
         Err(e) => {
-            eprintln!("❌ Failed to load records: {}", e);
+            eprintln!("❌ Failed to load trades: {}", e);
             return Err(e);
         }
     };
@@ -29,9 +28,9 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
     let mut map: HashMap<chrono::NaiveDate, DailySummary> = HashMap::new();
 
     // ひとまず注文と決済が交互に、日を跨がない前提で作る
-    for r in records {
+    for r in trades {
         // UNIX TIME → JST 日付
-        let date = get_business_date_from_unix(r.order_time);
+        let date = get_business_date_from_unix(r.exit_time);
 
         let entry = map.entry(date).or_insert(DailySummary {
             date,
@@ -42,21 +41,19 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
             win_total: 0,
             loss_total: 0,
             total_holding_time: 0,
+            trades: vec![],
         });
 
-        entry.profit += r.profit.unwrap_or(0);
-        if r.trade_type == "決済" {
-            entry.count += 1;
-        }
+        entry.profit += r.profit;
+        entry.count += 1;
+        entry.trades.push(r.clone());
 
-        let profit = r.profit.unwrap_or(0);
-
-        if profit > 0 {
+        if r.profit > 0 {
             entry.wins += 1;
-            entry.win_total += profit;
-        } else if profit < 0 {
+            entry.win_total += r.profit;
+        } else if r.profit < 0 {
             entry.losses += 1;
-            entry.loss_total += profit;
+            entry.loss_total += r.profit;
         }
     }
 
