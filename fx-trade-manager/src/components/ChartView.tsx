@@ -73,17 +73,14 @@ class DebugPaneView implements IPrimitivePaneView {
                         if (entryX !== null && entryY !== null && exitX !== null && exitY !== null) {
                             console.log("ok")
                             // --- 2. 2点間を点線で結ぶ ---
-                            ctx.strokeStyle = trade.exit_rate >= trade.entry_rate ? 'blue' : 'red'; // 利益に応じて色分け
+                            ctx.strokeStyle = "black"
                             ctx.lineWidth = 2;
-                            ctx.setLineDash([5, 5]); 
+                            ctx.setLineDash([]); 
                             
                             ctx.beginPath();
                             ctx.moveTo(entryX, entryY);
                             ctx.lineTo(exitX, exitY);
                             ctx.stroke();
-                            
-                            // 点線をリセット
-                            ctx.setLineDash([]);
                             
                             const drawArrow = (x: number, y: number, isUp: boolean, color: string) => {
                                 ctx.fillStyle = color;
@@ -104,6 +101,18 @@ class DebugPaneView implements IPrimitivePaneView {
                                 ctx.fill();
                             };
 
+                            const drawCloss = (x: number, y: number) => {
+                                ctx.strokeStyle = "black";
+                                ctx.lineWidth = 2;
+                                const size = 6;
+                                ctx.beginPath();
+                                ctx.moveTo(x - size, y - size);
+                                ctx.lineTo(x + size, y + size);
+                                ctx.moveTo(x - size, y + size);
+                                ctx.lineTo(x + size, y - size);
+                                ctx.stroke();
+                            };
+
                             // --- 4. エントリーポイントの矢印描画 ---
                             // 買い (isSell=false) なら上向き (isUp=true) で緑
                             // 売り (isSell=true) なら下向き (isUp=false) で赤
@@ -112,10 +121,7 @@ class DebugPaneView implements IPrimitivePaneView {
                             drawArrow(entryX, entryY, entryIsUp, entryColor);
                             
                             // --- 5. イグジットポイントの矢印描画 ---
-                            // エントリーと逆の向きと色
-                            const exitIsUp = !isSell; // エントリー (isUp) の逆
-                            const exitColor = isSell ? 'red' : 'blue';
-                            drawArrow(exitX, exitY, exitIsUp, exitColor);
+                            drawCloss(exitX, exitY);
                         }
                     }
                 });
