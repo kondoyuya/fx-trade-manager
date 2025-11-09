@@ -7,6 +7,7 @@ use crate::utils::time_utils::{jst_str_to_unix};
 use std::fs::File;
 use csv::ReaderBuilder;
 use chrono::{NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Europe::Helsinki;
 
 pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
     let mut rdr = csv::ReaderBuilder::new()
@@ -21,7 +22,7 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     for row in records.iter().rev() {
-        let order_time_str = row.get(8).unwrap_or("").to_string();
+        let order_time_str = row.get(9).unwrap_or("").to_string();
 
         // JST → UNIX TIME に変換
         let order_time_unix = jst_str_to_unix(&order_time_str).unwrap_or(0);
@@ -45,7 +46,7 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
             let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
             let trade = Trade {
                 pair: record.pair.clone(),
-                side: record.side.clone(),
+                side: prev.side.clone(),
                 lot: record.lot,
                 entry_rate: prev.rate,
                 exit_rate: record.rate,
@@ -77,10 +78,16 @@ pub fn import_candle_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         let time = &record[1];
         let datetime_str = format!("{} {}", date, time);
 
-        // UNIX秒に変換
-        let naive_dt = NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%d %H:%M:%S")
-            .map_err(|e| e.to_string())?;
-        let unix_time = Utc.from_utc_datetime(&naive_dt).timestamp();
+        // NaiveDateTimeとしてパース（まだタイムゾーンなし）
+        let naive_dt =
+            NaiveDateTime::parse_from_str(&datetime_str, "%Y-%m-%d %H:%M:%S").map_err(|e| e.to_string())?;
+
+        // Europe/Helsinki（DST対応）としてローカル→UTC変換
+        let local_dt = Helsinki
+            .from_local_datetime(&naive_dt)
+            .single()
+            .ok_or("DST重複または欠落エラー")?;
+        let unix_time = local_dt.timestamp();
 
         let candle = Candle {
             time: unix_time,
