@@ -6,6 +6,7 @@ use crate::models::db::trade::Trade;
 pub struct DailySummary {
     pub date: NaiveDate,
     pub profit: i32,          // 総利益
+    pub profit_pips: i32,          // 総利益
     pub count: i32,           // トレード回数
     pub wins: i32,            // 勝ちトレード回数
     pub losses: i32,          // 負けトレード回数

@@ -1,6 +1,7 @@
 export interface DailySummary {
   date: string;
   profit: number;
+  profit_pips: number;
   count: number;
   wins: number;
   losses: number;

@@ -35,6 +35,7 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
         let entry = map.entry(date).or_insert(DailySummary {
             date,
             profit: 0,
+            profit_pips: 0,
             count: 0,
             wins: 0,
             losses: 0,
@@ -45,6 +46,7 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
         });
 
         entry.profit += r.profit;
+        entry.profit_pips += r.profit_pips;
         entry.count += 1;
         entry.trades.push(r.clone());
         entry.total_holding_time += r.exit_time - r.entry_time;

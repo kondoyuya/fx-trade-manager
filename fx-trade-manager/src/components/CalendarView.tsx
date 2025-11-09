@@ -10,6 +10,7 @@ const CalendarView: React.FC = () => {
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
   const [showPopup, setShowPopup] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
+  const [displayMode, setDisplayMode] = useState<"円" | "pips">("円");
 
   useEffect(() => {
     async function fetchSummary() {
@@ -48,36 +49,64 @@ const CalendarView: React.FC = () => {
       const sDate = new Date(s.date);
       return sDate.getFullYear() === year && sDate.getMonth() === month;
     });
-    return monthlySummaries.reduce((sum, s) => sum + (s.profit ?? 0), 0);
+    return displayMode === "円"
+    ? monthlySummaries.reduce((sum, s) => sum + (s.profit ?? 0), 0)
+    : monthlySummaries.reduce((sum, s) => sum + (s.profit_pips ?? 0), 0) / 10;
   };
 
   const tradesForDate = getSummaryFromDate(selectedDate)?.trades ?? [];
 
   return (
     <main className="container mx-auto p-4">
+      <div className="flex space-x-2 mb-2">
+        <button
+          onClick={() => setDisplayMode("円")}
+          className={`px-2 py-1 rounded ${
+            displayMode === "円" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          円
+        </button>
+        <button
+          onClick={() => setDisplayMode("pips")}
+          className={`px-2 py-1 rounded ${
+            displayMode === "pips" ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          pips
+        </button>
+      </div>
       <div className="flex space-x-4">
         {/* 左：カレンダー */}
         <div className="flex-shrink-0">
           <Calendar
             onClickDay={(value) => setSelectedDate(value)}
             tileContent={({ date }) => {
-              const profit = getSummaryFromDate(date)?.profit ?? null;
+              if (getSummaryFromDate(date) == null) return;
+              const profit = displayMode === "円"
+                ? getSummaryFromDate(date).profit
+                : getSummaryFromDate(date).profit_pips / 10;
               if (profit === null) return null;
               const color =
                 profit > 0
-                  ? "text-green-600"
+                  ? "text-blue-600"
                   : profit < 0
                   ? "text-red-600"
                   : "text-gray-400";
-              return <p className={`text-xs ${color}`}>{profit.toFixed(0)}</p>;
+              return (
+                <p className={`text-xs ${profit !== 0 ? "font-bold" : ""} ${color}`}>
+                  {(profit > 0 ? "+" : "") + profit.toFixed(displayMode === "円" ? 0 : 1)}
+                </p>
+              );
             }}
           />
           <div className="mt-4 p-2 border rounded bg-gray-50">
             <h3 className="font-bold mb-1">
               {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月の収支
             </h3>
-            <p className={`font-semibold ${getMonthlyProfit(selectedDate) >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {getMonthlyProfit(selectedDate).toLocaleString("ja-JP", { maximumFractionDigits: 0 })} 円
+            <p className={`font-semibold ${getMonthlyProfit(selectedDate) >= 0 ? "text-blue-600" : "text-red-600"}`}>
+              {(getMonthlyProfit(selectedDate) > 0 ? "+" : "") 
+              + getMonthlyProfit(selectedDate) + displayMode} 
             </p>
           </div>
         </div>
@@ -85,7 +114,11 @@ const CalendarView: React.FC = () => {
         {/* 右：日付詳細 + トレード一覧 */}
         <div className="flex-1 max-h-[600px] overflow-y-auto border rounded p-2">
           <h2 className="font-bold mb-2">{selectedDate.toLocaleDateString()} の詳細</h2>
-          <p>利益: {getSummaryFromDate(selectedDate)?.profit ?? 0}</p>
+          <p>  利益:{" "}
+            {displayMode === "円"
+              ? getSummaryFromDate(selectedDate)?.profit ?? 0
+              : (getSummaryFromDate(selectedDate)?.profit_pips ?? 0) / 10
+            } {displayMode}</p>
           <p>トレード回数: {getSummaryFromDate(selectedDate)?.count ?? 0}</p>
           <p>勝ちトレード回数: {getSummaryFromDate(selectedDate)?.wins ?? 0}</p>
           <p>負けトレード回数: {getSummaryFromDate(selectedDate)?.losses ?? 0}</p>
@@ -148,10 +181,13 @@ const CalendarView: React.FC = () => {
                       </td>
                       <td
                         className={`px-2 py-1 text-right font-semibold ${
-                          t.profit >= 0 ? "text-green-600" : "text-red-600"
+                          t.profit >= 0 ? "text-blue-600" : "text-red-600"
                         }`}
                       >
-                        {t.profit.toFixed(0)}
+                        {displayMode == "円" 
+                          ? t.profit.toFixed(0)
+                          : (t.profit / t.lot / 100).toFixed(1)
+                        }
                       </td>
                       <td className="px-2 py-1 text-center">
                         <button
