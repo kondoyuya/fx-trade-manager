@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import CalendarPage from "./pages/CalendarPage";
 import HistoryPage from "./pages/HistoryPage";
 import ChartPage from "./pages/ChartPage";
@@ -6,9 +6,16 @@ import ImportPage from "./pages/ImportPage";
 import StatisticsPage from "./pages/StatisticsPage";
 import { Tab } from "./types";
 import './index.css';
+import { UpdaterDialog } from './components/UpdaterDialog';
+import { getVersion } from '@tauri-apps/api/app';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("calendar");
+  const [version, setVersion] = useState<string>("");
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(console.error);
+  }, []);
 
   return (
     <div className="flex h-screen font-sans">
@@ -67,12 +74,13 @@ function App() {
 
         {/* フッター */}
         <div className="p-4 border-t border-gray-700 text-sm text-gray-400">
-          © 2025 FX Manager
+          © 2025 FX Manager v{version}
         </div>
       </aside>
 
       {/* メインコンテンツ */}
       <main className="flex-1 bg-gray-100 p-6 overflow-auto">
+        <UpdaterDialog />
         {activeTab === "calendar" && <CalendarPage />}
         {activeTab === "history" && <HistoryPage />}
         {activeTab === "chart" && <ChartPage />}
