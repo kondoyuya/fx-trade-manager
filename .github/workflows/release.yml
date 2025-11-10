@@ -1,0 +1,95 @@
+name: Release (Tauri Auto Updater)
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Node.js + pnpm セットアップ
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      # Rust セットアップ
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+
+      # ==============================
+      # ✅ tauri.conf.json の version 自動更新
+      # ==============================
+      - name: Update version in tauri.conf.json
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "Updating tauri.conf.json version to $VERSION"
+          jq --arg version "$VERSION" '.version = $version' src-tauri/tauri.conf.json > tmp.json
+          mv tmp.json src-tauri/tauri.conf.json
+
+      # ==============================
+      # 🔑 Tauri ビルド
+      # ==============================
+      - name: Build Tauri App
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pnpm tauri build
+
+      # ==============================
+      # 🧾 latest.json 自動生成
+      # ==============================
+      - name: Generate latest.json
+        shell: bash
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          SIG_FILE=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip.sig" | head -n 1)
+          SIG=$(cat "$SIG_FILE")  # ← base64 を再度かけない
+          echo "{
+            \"version\": \"$VERSION\",
+            \"notes\": \"Auto generated release.\",
+            \"pub_date\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\",
+            \"platforms\": {
+              \"windows-x86_64\": {
+                \"signature\": \"$SIG\",
+                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/fx-trade-manager_${VERSION}_x64-setup.nsis.zip\"
+              }
+            }
+          }" > latest.json
+
+      # ==============================
+      # 🚀 GitHub Release アップロード
+      # ==============================
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            src-tauri/target/release/bundle/**/*.zip
+            src-tauri/target/release/bundle/**/*.sig
+            src-tauri/target/release/bundle/**/*.exe
+            latest.json
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
