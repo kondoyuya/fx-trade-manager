@@ -1,8 +1,11 @@
+pub mod update_cmd;
 pub mod records_cmd;
 
 macro_rules! register_commands {
     ($builder:expr) => {
         $builder.invoke_handler(tauri::generate_handler![
+            crate::commands::update_cmd::check_for_updates,
+            crate::commands::update_cmd::install_update,
             crate::commands::records_cmd::insert_record,
             crate::commands::records_cmd::insert_candle,
             crate::commands::records_cmd::get_all_records,

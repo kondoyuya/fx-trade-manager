@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "fx-trade-manager",
-  "version": "0.1.0",
+  "version": "0.4.0",
   "identifier": "com.halcy.fx-trade-manager",
   "build": {
     "beforeDevCommand": "pnpm dev",
@@ -23,6 +23,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": "v1Compatible",
     "targets": "all",
     "icon": [
       "icons/32x32.png",
@@ -31,5 +32,16 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "active": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEJDRTY5QTQ4RUE5NDJBMTUKUldRVktwVHFTSnJtdkw3K1hiYmJpajJnQTR3aWdTNEREejJMQlJHd3Y1bzVUOGdhMTh2QkZzbG0K",
+      "endpoints": [
+        "https://github.com/kondoyuya/fx-trade-manager/releases/latest/download/latest.json"
+      ],
+      "dialog": true,
+      "allowUnverifiedUpdates": true
+    }
   }
 }
