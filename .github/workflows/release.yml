@@ -29,6 +29,7 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+        working-directory: ./fx-trade-manager
 
       # Rust セットアップ
       - name: Setup Rust
