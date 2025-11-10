@@ -27,15 +27,13 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        working-directory: ./fx-trade-manager
         run: pnpm install
 
       - name: Build macOS App
-        working-directory: ./fx-trade-manager
         run: pnpm tauri build
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: macos-app
-          path: fx-trade-manager/src-tauri/target/release/bundle/**
+          path: src-tauri/target/release/bundle/**
