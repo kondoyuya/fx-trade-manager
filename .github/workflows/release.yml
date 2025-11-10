@@ -65,7 +65,7 @@ jobs:
         shell: bash
         run: |
           VERSION=${GITHUB_REF_NAME#v}
-          SIG_FILE=$(find src-tauri/target/release/bundle/nsis -name "*.sig" | head -n 1)
+          SIG_FILE=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip.sig" | head -n 1)
           SIG=$(cat "$SIG_FILE")  # ← base64 を再度かけない
           echo "{
             \"version\": \"$VERSION\",
