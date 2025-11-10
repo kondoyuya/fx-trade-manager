@@ -117,6 +117,7 @@ pub fn import_candle_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         let unix_time = local_dt.timestamp();
 
         let candle = Candle {
+            pair: "JPY/USD".to_string(),
             time: unix_time,
             open: record[2].parse::<f64>().unwrap(),
             high: record[3].parse::<f64>().unwrap(),

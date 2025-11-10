@@ -10,6 +10,7 @@ import {
 } from 'lightweight-charts';
 import { invoke } from "@tauri-apps/api/core";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
+import { UpdateOHLCButton } from "../components/UpdateOHLCButton";
 
 interface ChartViewProps {}
 
@@ -325,6 +326,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     検索
                 </button>
             </div>
+
+            <UpdateOHLCButton/>
 
             {/* 📈 チャート本体 */}
             <div ref={chartContainerRef} style={{ width: "800px", height: "600px" }} />

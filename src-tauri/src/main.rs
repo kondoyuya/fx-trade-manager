@@ -3,15 +3,20 @@
     windows_subsystem = "windows"
 )]
 
-use crate::db::DbState;
-use tauri::{Builder, generate_handler};
-use tauri_plugin_updater::UpdaterExt;
-
 mod service;
 mod commands;
 mod db;
 mod utils;
 mod models;
+mod mt5_client;
+mod python_server;
+
+use crate::db::DbState;
+use tauri::{Builder, generate_handler};
+use tauri_plugin_updater::UpdaterExt;
+use std::process::{Command, Child};
+use std::path::PathBuf;
+use python_server::{ensure_python_environment, start_python_server};
 
 #[tauri::command]
 fn quit_app() {
@@ -19,6 +24,12 @@ fn quit_app() {
 }
 
 fn main() {
+    // Python サーバーを起動
+    ensure_python_environment();
+    let mut _python_server = start_python_server();
+
+    std::thread::sleep(std::time::Duration::from_secs(1));
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
@@ -29,4 +40,6 @@ fn main() {
 
     let app = commands::register_commands!(app);
     app.run(tauri::generate_context!()).expect("failed to run app");
+
+    let _ = _python_server.kill();
 }

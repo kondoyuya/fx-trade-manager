@@ -17,6 +17,7 @@ pub const TABLES: &[&str] = &[
     r#"
     CREATE TABLE IF NOT EXISTS candles(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pair TEXT NOT NULL,
         time INTEGER NOT NULL UNIQUE,  -- UNIXTIMEで管理
         open REAL NOT NULL,
         high REAL NOT NULL,
