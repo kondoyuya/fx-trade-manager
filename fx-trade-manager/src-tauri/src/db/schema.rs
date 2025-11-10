@@ -9,7 +9,8 @@ pub const TABLES: &[&str] = &[
         rate REAL NOT NULL,
         profit INTEGER,
         swap INTEGER,
-        order_time INTEGER
+        order_time INTEGER,
+        UNIQUE(pair, side, trade_type, lot , rate, profit, swap, order_time)
     )
     "#,
 
@@ -41,7 +42,8 @@ pub const TABLES: &[&str] = &[
         profit INTEGER NOT NULL,
         profit_pips INTEGER NOT NULL,
         swap INTEGER,
-        memo TEXT
+        memo TEXT,
+        UNIQUE(pair, side, lot , entry_time, exit_time, entry_rate, exit_rate, profit, profit_pips, swap)
     )
     "#,
 
