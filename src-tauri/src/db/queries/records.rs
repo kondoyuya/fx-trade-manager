@@ -6,7 +6,7 @@ use crate::models::db::record::Record;
 pub fn insert_record(state: &DbState, record: &Record) -> Result<(), String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
     state.execute(
-        "INSERT INTO records (
+        "INSERT OR IGNORE INTO records (
         pair, side, trade_type, lot, rate, profit, swap, order_time
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
         params![
