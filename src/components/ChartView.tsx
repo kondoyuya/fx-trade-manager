@@ -325,9 +325,9 @@ const ChartView: React.FC<ChartViewProps> = () => {
                 >
                     検索
                 </button>
-            </div>
 
-            <UpdateOHLCButton/>
+                <UpdateOHLCButton/>
+            </div>
 
             {/* 📈 チャート本体 */}
             <div ref={chartContainerRef} style={{ width: "800px", height: "600px" }} />
@@ -382,7 +382,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     </table>
                 )}
 
-                        {showPopup && selectedTrade && (
+        {showPopup && selectedTrade && (
             <LabelSelectPopup
                 trade={selectedTrade}
                 onClose={() => setShowPopup(false)}
