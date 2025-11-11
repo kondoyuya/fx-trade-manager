@@ -48,7 +48,7 @@ const RecordUploader: React.FC<RecordUploaderProps> = () => {
         {/* ボタンの説明 */}
         <p className="text-gray-500 text-sm">
           ファイルを選択して内容を読み込みます。
-          現在対応している口座はDMMのみです。
+          現在対応している口座はDMMとGMOです。
         </p>
 
         {/* ファイル内容 */}

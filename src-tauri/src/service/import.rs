@@ -22,6 +22,61 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         .has_headers(true)
         .from_reader(transcoded);
 
+    // ヘッダーで口座の判別
+    let expected_headers_dmm = [
+        "通貨ペア",
+        "売買",
+        "区分",
+        "数量(Lot)",
+        "約定レート",
+        "建玉損益(円)",
+        "スワップ",
+        "決済損益(円)",
+        "注文日時",
+        "約定日時",
+        "注文番号",
+        "円転レート",
+        "取引手数料",
+        "建玉損益"
+    ];
+    let expected_headers_gmo = [
+        "約定日時","取引区分","受渡日","約定番号","銘柄名","銘柄コード","限月","コールプット区分",
+        "権利行使価格","権利行使価格通貨","カバードワラント商品種別","売買区分","通貨","受渡通貨",
+        "市場","口座","信用区分","約定数量","約定単価","コンバージョンレート","手数料",
+        "手数料消費税","建単価","新規手数料","新規手数料消費税","管理費","名義書換料","金利",
+        "貸株料","品貸料","前日分値洗","経過利子（円貨）","経過利子（外貨）","経過日数（外債）",
+        "所得税（外債）","地方税（外債）","金利・価格調整額（CFD）","配当金調整額（CFD）",
+        "金利・価格調整額（くりっく株365）","配当金調整額（くりっく株365）",
+        "売建単価（くりっく365/くりっく株365）","買建単価（くりっく365/くりっく株365）",
+        "円貨スワップ損益","外貨スワップ損益","約定金額（円貨）","約定金額（外貨）","決済金額（円貨）",
+        "決済金額（外貨）","実現損益（円貨）","実現損益（外貨）","実現損益（円換算額）",
+        "受渡金額（円貨）","受渡金額（外貨）","備考"
+    ];
+
+    let headers = rdr.headers().map_err(|e| e.to_string())?;
+    if headers.len() == expected_headers_dmm.len()
+        && headers.iter()
+                .zip(expected_headers_dmm.iter())
+                .all(|(a, b)| a == *b)
+    {
+        println!("DMM形式のCSVです");
+        process_dmm_csv(db, rdr)?;
+    } else if headers.len() == expected_headers_gmo.len()
+        && headers.iter()
+                .zip(expected_headers_gmo.iter())
+                .all(|(a, b)| a == *b)
+    {
+        println!("GMO形式のCSVです");
+        process_gmo_csv(db, rdr)?;
+    } else {
+        return Err("不明なCSVフォーマットです".to_string());
+    }
+
+    Ok(())
+}
+
+// DMM用の処理
+fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
     let mut prev = Record{..Default::default()};
 
     // 時系列でデータを読む
@@ -30,8 +85,6 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
 
     for row in records.iter().rev() {
         let order_time_str = row.get(9).unwrap_or("").to_string();
-
-        // JST → UNIX TIME に変換
         let order_time_unix = jst_str_to_unix(&order_time_str).unwrap_or(0);
 
         let record = Record {
@@ -47,8 +100,7 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         };
         records::insert_record(db, &record)?;
 
-        // 決済のレコードだった場合はtradeテーブルへのinsertも行う
-        if row.get(2).unwrap_or("").to_string() == "決済" {
+        if row.get(2).unwrap_or("") == "決済" {
             let direction = if prev.side == "買" { 1.0 } else { -1.0 };
             let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
             let trade = Trade {
@@ -64,6 +116,70 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
                 swap: record.swap,
                 ..Default::default()
             };
+            trades::insert_trade(db, trade)?;
+        }
+
+        prev = record;
+    }
+
+    Ok(())
+}
+
+// GMO用の処理
+fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
+    let mut prev = Record { ..Default::default() };
+
+    let records: Vec<_> = rdr.records().collect::<Result<Vec<_>, _>>()
+        .map_err(|e| e.to_string())?;
+
+    for row in records.iter() {
+        let trade_type_raw = row.get(1).unwrap_or("").trim();
+        // "FXネオ新規" または "FXネオ決済" 以外ならスキップ
+        let trade_type = match trade_type_raw {
+            "FXネオ新規" => "新規",
+            "FXネオ決済" => "決済",
+            _ => continue,
+        };
+
+        // 約定日時 → UNIX TIME
+        let order_time_str = row.get(0).unwrap_or(""); // "約定日時"
+        let order_time_unix = jst_str_to_unix(order_time_str).unwrap_or(0);
+
+        // Record 作成
+        let record = Record {
+            pair: row.get(4).unwrap_or("").to_string(),            // "銘柄名"
+            side: row.get(11).unwrap_or("").to_string(),          // "売買区分"
+            trade_type: trade_type.to_string(),     // "取引区分"
+            lot: row.get(17).unwrap_or("0").parse::<f64>().unwrap_or(0.0) / 10000.0,  // "約定数量"
+            rate: row.get(18).unwrap_or("0").parse::<f64>().unwrap_or(0.0), // "約定単価"
+            profit: parse_i32_from_csv(row.get(46).unwrap_or("")),           // "実現損益（円貨）"
+            swap: parse_i32_from_csv(row.get(42).unwrap_or("0")),             // "円貨スワップ損益"
+            order_time: order_time_unix,
+            ..Default::default()
+        };
+
+        // DBにレコード挿入
+        records::insert_record(db, &record)?;
+
+        // 決済レコードの場合、Tradeも作成
+        if record.trade_type == "決済" {
+            let direction = if prev.side == "買" { 1.0 } else { -1.0 };
+            let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
+
+            let trade = Trade {
+                pair: record.pair.clone(),
+                side: prev.side.clone(),
+                lot: record.lot,
+                entry_rate: prev.rate,
+                exit_rate: record.rate,
+                entry_time: prev.order_time,
+                exit_time: record.order_time,
+                profit: record.profit.unwrap_or(0),
+                profit_pips,
+                swap: record.swap,
+                ..Default::default()
+            };
+
             trades::insert_trade(db, trade)?;
         }
 
