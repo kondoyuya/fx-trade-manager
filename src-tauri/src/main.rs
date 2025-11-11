@@ -25,7 +25,13 @@ fn quit_app() {
 
 fn main() {
     // Python サーバーを起動
-    let mut _python_server = start_python_server();
+    let mut python_server: Option<std::process::Child> = match start_python_server() {
+        Ok(child) => Some(child),
+        Err(err) => {
+            eprintln!("Failed to start Python server: {}", err);
+            None
+        }
+    };
 
     std::thread::sleep(std::time::Duration::from_secs(1));
 
@@ -38,7 +44,15 @@ fn main() {
         .manage(DbState::new().expect("Failed to init database"));
 
     let app = commands::register_commands!(app);
-    app.run(tauri::generate_context!()).expect("failed to run app");
+    app.run(tauri::generate_context!())
+        .expect("failed to run app");
 
-    let _ = _python_server.expect("Failed to start Python server").kill();
+    // アプリ終了時に Python サーバーが起動していれば kill
+    if let Some(mut child) = python_server {
+        if let Err(err) = child.kill() {
+            eprintln!("Failed to kill Python server: {}", err);
+        } else {
+            println!("Python server stopped");
+        }
+    }
 }
