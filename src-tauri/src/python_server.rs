@@ -5,9 +5,13 @@ use std::{
 };
 
 fn get_mt5_dir() -> PathBuf {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+    #[cfg(debug_assertions)]
+    let exe_dir = std::env::var("CARGO_MANIFEST_DIR")
         .expect("CARGO_MANIFEST_DIR not set");
-    PathBuf::from(manifest_dir).join("mt5")
+    #[cfg(not(debug_assertions))]
+    let exe_path = std::env::current_exe().expect("Failed to get exe path");
+    let exe_dir = exe_path.parent().expect("Failed to get exe dir");
+    PathBuf::from(exe_dir).join("mt5")
 }
 
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
