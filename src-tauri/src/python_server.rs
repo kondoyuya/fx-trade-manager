@@ -1,13 +1,13 @@
 use std::{
     path::PathBuf,
-    process::{Command, Child},
+    process::{Command, Child, Stdio},
     fs,
 };
 
 fn get_mt5_dir() -> PathBuf {
-    let exe_path = std::env::current_exe().expect("Failed to get exe path");
-    let exe_dir = exe_path.parent().expect("Failed to get exe dir");
-    exe_dir.join("mt5") // exe と同階層に mt5 フォルダを置く想定
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")
+        .expect("CARGO_MANIFEST_DIR not set");
+    PathBuf::from(manifest_dir).join("mt5")
 }
 
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
@@ -52,9 +52,19 @@ pub fn start_python_server() -> Result<Child, String> {
     if !python_exe.exists() {
         return Err(format!("Python executable not found: {:?}", python_exe));
     }
+    
 
     // 6. 依存をインストール
     println!("Installing Python dependencies...");
+    
+    let status = Command::new(&python_exe)
+        .args(&["-m", "ensurepip", "--upgrade"])
+        .status()
+        .map_err(|e| format!("Failed to run ensurepip: {}", e))?;
+    if !status.success() {
+        return Err("Failed to install pip with ensurepip".into());
+    }
+
     let status = Command::new(&python_exe)
         .args(&["-m", "pip", "install", "--upgrade", "pip"])
         .status()
@@ -77,6 +87,8 @@ pub fn start_python_server() -> Result<Child, String> {
     // 7. Python サーバーをバックグラウンドで起動
     let child = Command::new(&python_exe)
         .arg(&server_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to start Python server: {}", e))?;
 

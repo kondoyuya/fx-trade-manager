@@ -23,7 +23,3 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-
-mt5/venv/*
-__pycache__/
-*.pyc
