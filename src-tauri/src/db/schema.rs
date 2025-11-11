@@ -25,7 +25,8 @@ pub const TABLES: &[&str] = &[
         close REAL NOT NULL,
         tickvol INTEGER,
         vol INTEGER,
-        spread INTEGER
+        spread INTEGER,
+        UNIQUE(pair, time)
     )
     "#,
 

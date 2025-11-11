@@ -1,13 +1,17 @@
 use serde::Deserialize;
+use reqwest::Client;
 use anyhow::Result;
 use crate::models::db::candle::Candle;
 
-pub async fn fetch_ohlc(last_time: i64) -> Result<Vec<Candle>> {
-    // MT5側はPython HTTPサーバでJSON返却
-    let url = format!("http://127.0.0.1:5000/get_ohlc?since={}", last_time);
-    let resp = reqwest::get(&url).await?;
-    let text = resp.text().await?;
-    println!("RAW RESPONSE: {}", text);
-    let candles: Vec<Candle> = serde_json::from_str(&text)?; 
+pub async fn fetch_ohlc(latest_time: i64) -> Result<Vec<Candle>, String> {
+    let url = format!("http://127.0.0.1:5000/get_ohlc?since={}&batch_size=1000", latest_time);
+    let resp = Client::new()
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    let candles = resp.json::<Vec<Candle>>()
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(candles)
 }
