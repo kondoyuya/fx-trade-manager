@@ -4,6 +4,9 @@ use std::{
     fs,
 };
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 fn get_mt5_dir() -> PathBuf {
     #[cfg(debug_assertions)]
     let exe_dir = std::env::var("CARGO_MANIFEST_DIR")
@@ -16,10 +19,7 @@ fn get_mt5_dir() -> PathBuf {
 
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
 pub fn start_python_server() -> Result<Child, String> {
-    // 1. resources ディレクトリを取得
     let mt5_dir = get_mt5_dir();
-
-    // 2. Python サーバーと requirements.txt のパス
     let server_path = mt5_dir.join("mt5_server.py");
     let requirements_path = mt5_dir.join("requirements.txt");
 
@@ -30,65 +30,72 @@ pub fn start_python_server() -> Result<Child, String> {
         return Err(format!("requirements.txt not found: {:?}", requirements_path));
     }
 
-    // 3. venv ディレクトリ
     let venv_path = mt5_dir.join("venv");
+    let first_run = !venv_path.exists();
 
-    // 4. venv がなければ作成
-    if !venv_path.exists() {
-        println!("Creating virtual environment...");
+    // 初回のみ venv 作成と依存インストール
+    if first_run {
+        println!("First run detected: creating virtual environment and installing dependencies...");
+
         let status = Command::new("python")
             .args(&["-m", "venv"])
             .arg(&venv_path)
             .status()
             .map_err(|e| format!("Failed to create venv: {}", e))?;
-
         if !status.success() {
             return Err("Failed to create venv".into());
         }
+
+        let python_exe = if cfg!(windows) {
+            venv_path.join("Scripts/python.exe")
+        } else {
+            venv_path.join("bin/python")
+        };
+        if !python_exe.exists() {
+            return Err(format!("Python executable not found: {:?}", python_exe));
+        }
+
+        let status = Command::new(&python_exe)
+            .args(&["-m", "ensurepip", "--upgrade"])
+            .status()
+            .map_err(|e| format!("Failed to run ensurepip: {}", e))?;
+        if !status.success() {
+            return Err("Failed to install pip with ensurepip".into());
+        }
+
+        let status = Command::new(&python_exe)
+            .args(&["-m", "pip", "install", "-r"])
+            .arg(&requirements_path)
+            .status()
+            .map_err(|e| format!("Failed to install dependencies: {}", e))?;
+        if !status.success() {
+            return Err("Failed to install Python dependencies".into());
+        }
+
+        println!("Python environment setup complete!");
+    } else {
+        println!("venv already exists, skipping setup");
     }
 
-    // 5. Python 実行ファイル
+    // Python 実行ファイル
     let python_exe = if cfg!(windows) {
         venv_path.join("Scripts/python.exe")
     } else {
         venv_path.join("bin/python")
     };
-    if !python_exe.exists() {
-        return Err(format!("Python executable not found: {:?}", python_exe));
-    }
-    
 
-    // 6. 依存をインストール
-    println!("Installing Python dependencies...");
-    
-    let status = Command::new(&python_exe)
-        .args(&["-m", "ensurepip", "--upgrade"])
-        .status()
-        .map_err(|e| format!("Failed to run ensurepip: {}", e))?;
-    if !status.success() {
-        return Err("Failed to install pip with ensurepip".into());
-    }
+    // Python サーバー起動
+    #[cfg(windows)]
+    // Windows起動時にコンソールを開かないようにする
+    let child = Command::new(&python_exe)
+        .arg(&server_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .creation_flags(0x08000000)
+        .spawn()
+        .map_err(|e| format!("Failed to start Python server: {}", e))?;
 
-    let status = Command::new(&python_exe)
-        .args(&["-m", "pip", "install", "--upgrade", "pip"])
-        .status()
-        .map_err(|e| format!("Failed to upgrade pip: {}", e))?;
-
-    if !status.success() {
-        return Err("Failed to upgrade pip".into());
-    }
-
-    let status = Command::new(&python_exe)
-        .args(&["-m", "pip", "install", "-r"])
-        .arg(&requirements_path)
-        .status()
-        .map_err(|e| format!("Failed to install dependencies: {}", e))?;
-
-    if !status.success() {
-        return Err("Failed to install Python dependencies".into());
-    }
-
-    // 7. Python サーバーをバックグラウンドで起動
+    #[cfg(not(windows))]
     let child = Command::new(&python_exe)
         .arg(&server_path)
         .stdout(Stdio::piped())
@@ -97,6 +104,5 @@ pub fn start_python_server() -> Result<Child, String> {
         .map_err(|e| format!("Failed to start Python server: {}", e))?;
 
     println!("Python server started (pid = {})", child.id());
-
     Ok(child)
 }
