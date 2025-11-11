@@ -15,9 +15,22 @@ pub const TABLES: &[&str] = &[
     "#,
 
     r#"
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_records_unique
+        ON records(
+        pair,
+        side,
+        trade_type,
+        lot,
+        rate,
+        COALESCE(profit, 0),
+        COALESCE(swap, 0),
+        order_time
+    )
+    "#,
+
+    r#"
     CREATE TABLE IF NOT EXISTS candles(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        pair TEXT NOT NULL,
         time INTEGER NOT NULL UNIQUE,  -- UNIXTIMEで管理
         open REAL NOT NULL,
         high REAL NOT NULL,
@@ -25,8 +38,7 @@ pub const TABLES: &[&str] = &[
         close REAL NOT NULL,
         tickvol INTEGER,
         vol INTEGER,
-        spread INTEGER,
-        UNIQUE(pair, time)
+        spread INTEGER
     )
     "#,
 
@@ -46,6 +58,19 @@ pub const TABLES: &[&str] = &[
         swap INTEGER,
         memo TEXT,
         UNIQUE(pair, side, lot , entry_time, exit_time, entry_rate, exit_rate, profit, profit_pips, swap)
+    )
+    "#,
+
+    r#"
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_unique
+        ON trades(
+        pair,
+        side,
+        lot,
+        entry_time,
+        exit_time,
+        COALESCE(profit, 0),
+        COALESCE(swap, 0)
     )
     "#,
 

@@ -10,6 +10,7 @@ use chrono::{NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Europe::Helsinki;
 use encoding_rs::SHIFT_JIS;
 use encoding_rs_io::DecodeReaderBytesBuilder;
+use std::collections::VecDeque;
 
 pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
     // SJIS → UTF-8 デコード
@@ -27,11 +28,11 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
         "通貨ペア",
         "売買",
         "区分",
-        "数量(Lot)",
+        "数量（Lot）",
         "約定レート",
-        "建玉損益(円)",
+        "建玉損益（円）",
         "スワップ",
-        "決済損益(円)",
+        "決済損益（円）",
         "注文日時",
         "約定日時",
         "注文番号",
@@ -77,16 +78,20 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
 
 // DMM用の処理
 fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
-    let mut prev = Record{..Default::default()};
+    // 売り・買いのポジションキュー
+    let mut buy_positions: VecDeque<Record> = VecDeque::new();
+    let mut sell_positions: VecDeque<Record> = VecDeque::new();
 
-    // 時系列でデータを読む
+    // CSV全行を取得
     let records: Vec<_> = rdr.records().collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
+    // 時系列順（古い順）で処理
     for row in records.iter().rev() {
         let order_time_str = row.get(9).unwrap_or("").to_string();
         let order_time_unix = jst_str_to_unix(&order_time_str).unwrap_or(0);
 
+        // CSV → Record構築
         let record = Record {
             pair: row.get(0).unwrap_or("").to_string(),
             side: row.get(1).unwrap_or("").to_string(),
@@ -98,28 +103,70 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
             order_time: order_time_unix,
             ..Default::default()
         };
+
+        dbg!(&record);
+
+        // DBに登録
         records::insert_record(db, &record)?;
 
-        if row.get(2).unwrap_or("") == "決済" {
-            let direction = if prev.side == "買" { 1.0 } else { -1.0 };
-            let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
-            let trade = Trade {
-                pair: record.pair.clone(),
-                side: prev.side.clone(),
-                lot: record.lot,
-                entry_rate: prev.rate,
-                exit_rate: record.rate,
-                entry_time: prev.order_time,
-                exit_time: record.order_time,
-                profit: record.profit.unwrap_or(0),
-                profit_pips: profit_pips,
-                swap: record.swap,
-                ..Default::default()
-            };
-            trades::insert_trade(db, trade)?;
-        }
+        match record.trade_type.as_str() {
+            // 新規注文はポジションキューに積む
+            "新規" => {
+                if record.side == "買" {
+                    buy_positions.push_back(record.clone());
+                } else if record.side == "売" {
+                    sell_positions.push_back(record.clone());
+                }
+            }
 
-        prev = record;
+            // 決済注文の場合、対応する建玉をFIFOで決済
+            "決済" => {
+                let queue = if record.side == "買" {
+                    &mut sell_positions // 売り建玉を決済
+                } else {
+                    &mut buy_positions // 買い建玉を決済
+                };
+
+                let mut remaining_lot = record.lot;
+
+                while remaining_lot > 0.0 {
+                    if let Some(mut entry) = queue.pop_front() {
+                        let close_lot = remaining_lot.min(entry.lot);
+                        let direction = if entry.side == "買" { 1.0 } else { -1.0 };
+                        let profit_pips = ((record.rate - entry.rate) * 1000.0 * direction).round() as i32;
+
+                        let trade = Trade {
+                            pair: record.pair.clone(),
+                            side: entry.side.clone(),
+                            lot: close_lot,
+                            entry_rate: entry.rate,
+                            exit_rate: record.rate,
+                            entry_time: entry.order_time,
+                            exit_time: record.order_time,
+                            profit: record.profit.unwrap_or(0),
+                            profit_pips,
+                            swap: record.swap,
+                            ..Default::default()
+                        };
+
+                        trades::insert_trade(db, trade)?;
+
+                        // 部分決済なら残りを戻す
+                        if entry.lot > close_lot {
+                            entry.lot -= close_lot;
+                            queue.push_front(entry);
+                        }
+
+                        remaining_lot -= close_lot;
+                    } else {
+                        eprintln!("⚠ 決済に対応する建玉が見つかりません: {:?}", record);
+                        break;
+                    }
+                }
+            }
+
+            _ => {}
+        }
     }
 
     Ok(())
@@ -127,7 +174,9 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
 
 // GMO用の処理
 fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
-    let mut prev = Record { ..Default::default() };
+    // 売り・買いのポジションキュー
+    let mut buy_positions: VecDeque<Record> = VecDeque::new();
+    let mut sell_positions: VecDeque<Record> = VecDeque::new();
 
     let records: Vec<_> = rdr.records().collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
@@ -141,49 +190,78 @@ fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
             _ => continue,
         };
 
-        // 約定日時 → UNIX TIME
-        let order_time_str = row.get(0).unwrap_or(""); // "約定日時"
+        let order_time_str = row.get(0).unwrap_or(""); // 約定日時
         let order_time_unix = jst_str_to_unix(order_time_str).unwrap_or(0);
 
-        // Record 作成
         let record = Record {
-            pair: row.get(4).unwrap_or("").to_string(),            // "銘柄名"
-            side: row.get(11).unwrap_or("").to_string(),          // "売買区分"
-            trade_type: trade_type.to_string(),     // "取引区分"
-            lot: row.get(17).unwrap_or("0").parse::<f64>().unwrap_or(0.0) / 10000.0,  // "約定数量"
-            rate: row.get(18).unwrap_or("0").parse::<f64>().unwrap_or(0.0), // "約定単価"
-            profit: parse_i32_from_csv(row.get(46).unwrap_or("")),           // "実現損益（円貨）"
-            swap: parse_i32_from_csv(row.get(42).unwrap_or("0")),             // "円貨スワップ損益"
+            pair: row.get(4).unwrap_or("").to_string(), // 銘柄名
+            side: row.get(11).unwrap_or("").to_string(), // 売買区分（"買" or "売"）
+            trade_type: trade_type.to_string(),
+            lot: row.get(17).unwrap_or("0").parse::<f64>().unwrap_or(0.0) / 10000.0, // 約定数量
+            rate: row.get(18).unwrap_or("0").parse::<f64>().unwrap_or(0.0), // 約定単価
+            profit: parse_i32_from_csv(row.get(46).unwrap_or("")), // 実現損益（円貨）
+            swap: parse_i32_from_csv(row.get(42).unwrap_or("")), // 円貨スワップ損益
             order_time: order_time_unix,
             ..Default::default()
         };
 
-        // DBにレコード挿入
+        // DBに登録
         records::insert_record(db, &record)?;
 
-        // 決済レコードの場合、Tradeも作成
-        if record.trade_type == "決済" {
-            let direction = if prev.side == "買" { 1.0 } else { -1.0 };
-            let profit_pips = ((record.rate - prev.rate) * 1000.0 * direction).round() as i32;
+        match record.trade_type.as_str() {
+            "新規" => {
+                if record.side == "買" {
+                    buy_positions.push_back(record.clone());
+                } else if record.side == "売" {
+                    sell_positions.push_back(record.clone());
+                }
+            }
+            "決済" => {
+                let queue = if record.side == "買" {
+                    &mut sell_positions // 売りポジションの決済
+                } else {
+                    &mut buy_positions // 買いポジションの決済
+                };
 
-            let trade = Trade {
-                pair: record.pair.clone(),
-                side: prev.side.clone(),
-                lot: record.lot,
-                entry_rate: prev.rate,
-                exit_rate: record.rate,
-                entry_time: prev.order_time,
-                exit_time: record.order_time,
-                profit: record.profit.unwrap_or(0),
-                profit_pips,
-                swap: record.swap,
-                ..Default::default()
-            };
+                let mut remaining_lot = record.lot;
 
-            trades::insert_trade(db, trade)?;
+                while remaining_lot > 0.0 {
+                    if let Some(mut entry) = queue.pop_front() {
+                        let close_lot = remaining_lot.min(entry.lot);
+                        let direction = if entry.side == "買" { 1.0 } else { -1.0 };
+                        let profit_pips = ((record.rate - entry.rate) * 1000.0 * direction).round() as i32;
+
+                        let trade = Trade {
+                            pair: record.pair.clone(),
+                            side: entry.side.clone(),
+                            lot: close_lot,
+                            entry_rate: entry.rate,
+                            exit_rate: record.rate,
+                            entry_time: entry.order_time,
+                            exit_time: record.order_time,
+                            profit: record.profit.unwrap_or(0),
+                            profit_pips,
+                            swap: record.swap,
+                            ..Default::default()
+                        };
+
+                        trades::insert_trade(db, trade)?;
+
+                        // 部分決済の場合、残りロットを戻す
+                        if entry.lot > close_lot {
+                            entry.lot -= close_lot;
+                            queue.push_front(entry);
+                        }
+
+                        remaining_lot -= close_lot;
+                    } else {
+                        eprintln!("⚠ 決済に対応する建玉が見つかりません: {:?}", record);
+                        break;
+                    }
+                }
+            }
+            _ => {}
         }
-
-        prev = record;
     }
 
     Ok(())
