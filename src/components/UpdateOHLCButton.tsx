@@ -3,11 +3,11 @@ import { invoke } from "@tauri-apps/api/core";
 export const UpdateOHLCButton = () => {
   const handleClick = async () => {
     try {
-      const result = await invoke<string>("fetch_and_update_ohlc");
-      alert(result);
+      await invoke<string>("fetch_and_update_ohlc");
+      alert("更新に成功しました");
     } catch (err) {
       console.error(err);
-      alert("DB更新に失敗しました");
+      alert("DB更新に失敗しました: " + (err.message || JSON.stringify(err)));
     }
   };
 
