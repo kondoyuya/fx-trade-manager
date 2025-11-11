@@ -18,6 +18,7 @@ export const UpdateOHLCButton = () => {
       }
 
       alert("DB更新に失敗しました: " + msg);
+    }
   };
 
   return (
