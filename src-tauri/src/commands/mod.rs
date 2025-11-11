@@ -1,5 +1,6 @@
 pub mod update_cmd;
 pub mod records_cmd;
+pub mod handlers;
 
 macro_rules! register_commands {
     ($builder:expr) => {
@@ -18,6 +19,7 @@ macro_rules! register_commands {
             crate::commands::records_cmd::add_trade_label,
             crate::commands::records_cmd::delete_trade_label,
             crate::commands::records_cmd::get_labels_for_trade,
+            crate::commands::handlers::fetch_and_update_ohlc,
         ])
     };
 }

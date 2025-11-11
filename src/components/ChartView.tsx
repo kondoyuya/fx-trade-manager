@@ -10,6 +10,7 @@ import {
 } from 'lightweight-charts';
 import { invoke } from "@tauri-apps/api/core";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
+import { UpdateOHLCButton } from "../components/UpdateOHLCButton";
 
 interface ChartViewProps {}
 
@@ -324,6 +325,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
                 >
                     検索
                 </button>
+
+                <UpdateOHLCButton/>
             </div>
 
             {/* 📈 チャート本体 */}
@@ -379,7 +382,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     </table>
                 )}
 
-                        {showPopup && selectedTrade && (
+        {showPopup && selectedTrade && (
             <LabelSelectPopup
                 trade={selectedTrade}
                 onClose={() => setShowPopup(false)}

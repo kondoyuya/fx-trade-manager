@@ -2,6 +2,7 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Candle {
+    pub pair: String,
     pub time: i64,
     pub open: f64,
     pub high: f64,
