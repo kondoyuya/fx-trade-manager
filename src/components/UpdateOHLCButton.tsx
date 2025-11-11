@@ -7,8 +7,17 @@ export const UpdateOHLCButton = () => {
       alert("更新に成功しました");
     } catch (err) {
       console.error(err);
-      alert("DB更新に失敗しました: " + (err.message || JSON.stringify(err)));
-    }
+
+      let msg = "不明なエラー";
+      if (err instanceof Error) {
+        msg = err.message;
+      } else if (typeof err === "string") {
+        msg = err;
+      } else {
+        msg = JSON.stringify(err);
+      }
+
+      alert("DB更新に失敗しました: " + msg);
   };
 
   return (
