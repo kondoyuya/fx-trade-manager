@@ -1,6 +1,6 @@
 use crate::db::DbState;
 use crate::service::import::{import_csv_to_db, import_candle_to_db};
-use crate::service::records::{fetch_all_records, fetch_daily_records, fetch_all_trades};
+use crate::service::records::{fetch_all_records, fetch_daily_records, fetch_all_trades, update_trade_memo_by_id};
 use crate::service::candles::{fetch_candles};
 use crate::service::labels::{insert_label, fetch_all_label_with_trade, fetch_all_labels, insert_trade_label};
 use tauri::State;
@@ -69,4 +69,15 @@ pub fn get_all_labels(state: State<DbState>) -> Result<Vec<Label>, String> {
 pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelWithTrade>, String> {
     let db = &*state;
     fetch_all_label_with_trade(db)
+}
+
+#[tauri::command]
+pub fn update_memo(state: State<DbState>, id: Option<i32>, memo_content: String) -> Result<(), String> {
+    let db = &*state;
+    let trade = Trade {
+        id: id,
+        memo: memo_content,
+        ..Default::default()
+    };
+    update_trade_memo_by_id(db, trade)
 }

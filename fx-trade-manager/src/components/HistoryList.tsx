@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { UpdateMemoButton } from "../components/UpdateMemoButton";
 
 interface Trade {
   id: number;
@@ -134,7 +135,7 @@ const HistoryList: React.FC = () => {
               </td>
               <td className="border border-gray-300 p-2">{r.profit}</td>
               <td className="border border-gray-300 p-2">{r.swap}</td>
-              <td className="border border-gray-300 p-2">{r.memo}</td>
+              <td className="border border-gray-300 p-2"><UpdateMemoButton tradeId={r.id} memoContent={r.memo} /></td>
               <td className="border border-gray-300 p-2">
                 <button
                   onClick={() => {
