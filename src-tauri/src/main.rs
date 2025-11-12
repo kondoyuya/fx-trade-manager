@@ -25,15 +25,16 @@ fn quit_app() {
 }
 
 fn main() {
+    let db = DbState::new().expect("Failed to init database");
     // Python サーバー起動
-    let python_server = match start_python_server() {
+    let python_server = match start_python_server(&db) {
         Ok(child) => Some(Arc::new(Mutex::new(child))),
         Err(err) => {
             eprintln!("Failed to start Python server: {}", err);
             None
         }
     };
-
+    
     let python_server_clone = python_server.clone();
 
     let app = tauri::Builder::default()
@@ -42,7 +43,7 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![quit_app])
-        .manage(DbState::new().expect("Failed to init database"))
+        .manage(db)
         .on_window_event(move |_window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 println!("Close requested: shutting down Python server...");
