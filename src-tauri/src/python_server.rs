@@ -11,9 +11,10 @@ fn get_mt5_dir() -> PathBuf {
     #[cfg(debug_assertions)]
     let exe_dir = std::env::var("CARGO_MANIFEST_DIR")
         .expect("CARGO_MANIFEST_DIR not set");
-    #[cfg(not(debug_assertions))]
-    let exe_path = std::env::current_exe().expect("Failed to get exe path");
-    let exe_dir = exe_path.parent().expect("Failed to get exe dir");
+    #[cfg(not(debug_assertions))] {
+        let exe_path = std::env::current_exe().expect("Failed to get exe path");
+        let exe_dir = exe_path.parent().expect("Failed to get exe dir");
+    }
     PathBuf::from(exe_dir).join("mt5")
 }
 
