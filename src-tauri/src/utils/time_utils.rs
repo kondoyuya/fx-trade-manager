@@ -16,7 +16,7 @@ pub fn get_business_date_from_unix(unix: i64) -> chrono::NaiveDate {
     let ny = chrono_tz::America::New_York;
 
     // UNIX秒 (JST基準) → JST日時
-    let naive = chrono::NaiveDateTime::from_timestamp_opt(unix - 3600*17, 0) // NY時間で0時が境界になるように調整
+    let naive = chrono::NaiveDateTime::from_timestamp_opt(unix + 3600*7, 0) // NY時間で0時が境界になるように調整
         .unwrap_or_else(|| chrono::NaiveDateTime::from_timestamp(0, 0));
     let jst_dt = jst.from_utc_datetime(&naive);
 

@@ -18,6 +18,7 @@ const CalendarView: React.FC = () => {
       try {
         const data = await invoke<DailySummary[]>("get_daily_records");
         setSummaries(data);
+        console.log(data);
       } catch (err) {
         console.error("Failed to fetch summaries:", err);
       }
@@ -26,7 +27,8 @@ const CalendarView: React.FC = () => {
   }, []);
 
   const getSummaryFromDate = (date: Date): DailySummary | null => {
-    const dateStr = date.toISOString().split("T")[0];
+    const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+    const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, "0")}-${String(jst.getDate()).padStart(2, "0")}`;
     return summaries.find((s) => s.date === dateStr) ?? null;
   };
 
@@ -83,17 +85,14 @@ const CalendarView: React.FC = () => {
           <Calendar
             onClickDay={(value) => setSelectedDate(value)}
             tileContent={({ date }) => {
-              if (getSummaryFromDate(date) == null) return;
-              const profit = displayMode === "円"
-                ? (getSummaryFromDate(date)?.profit ?? 0)
-                : (getSummaryFromDate(date)?.profit_pips ?? 0) / 10;
-              if (profit === null) return null;
-              const color =
-                profit > 0
-                  ? "text-blue-600"
-                  : profit < 0
-                  ? "text-red-600"
-                  : "text-gray-400";
+              const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
+              const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, "0")}-${String(jst.getDate()).padStart(2, "0")}`;
+              const summary = summaries.find(s => s.date === dateStr);
+              if (!summary) return null;
+
+              const profit = displayMode === "円" ? summary.profit : summary.profit_pips / 10;
+              const color = profit > 0 ? "text-blue-600" : profit < 0 ? "text-red-600" : "text-gray-400";
+
               return (
                 <p className={`text-xs ${profit !== 0 ? "font-bold" : ""} ${color}`}>
                   {(profit > 0 ? "+" : "") + profit.toFixed(displayMode === "円" ? 0 : 1)}

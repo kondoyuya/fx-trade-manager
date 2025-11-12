@@ -23,4 +23,4 @@ export interface Trade {
   memo: string;
 }
 
-export type Tab = "calendar" | "history" | "statistics" | "chart" | "import";
+export type Tab = "calendar" | "history" | "statistics" | "chart" | "import" | "profit";
