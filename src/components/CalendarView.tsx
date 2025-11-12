@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { DailySummary, Trade } from "../types";
 import "react-calendar/dist/Calendar.css";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
+import { UpdateMemoButton } from "../components/UpdateMemoButton";
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -157,6 +158,7 @@ const CalendarView: React.FC = () => {
                     <th className="px-2 py-1 border-b text-right">Exit Time</th>
                     <th className="px-2 py-1 border-b text-right">損益</th>
                     <th className="px-2 py-1 border-b text-center">操作</th>
+                    <th className="px-2 py-1 border-b text-center">操作</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,6 +203,9 @@ const CalendarView: React.FC = () => {
                         >
                           ラベル登録
                         </button>
+                      </td>
+                      <td className="px-2 py-1 text-center">
+                        <UpdateMemoButton tradeId={t.id} memoContent={t.memo} />
                       </td>
                     </tr>
                   ))}

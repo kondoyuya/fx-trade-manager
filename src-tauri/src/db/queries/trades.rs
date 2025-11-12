@@ -96,3 +96,28 @@ pub fn get_trades_by_label(state: &DbState, label_id: i32) -> Result<Vec<Trade>,
     }
     Ok(trades)
 }
+
+pub fn update_trade_memo_by_id(state: &DbState, trade: Trade) -> Result<(), String> {
+
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+        // ベースSQL
+    let mut sql = String::from(
+        "UPDATE trades SET 
+        memo = ?1",
+    );
+
+    let mut params: Vec<&dyn rusqlite::ToSql> = vec![
+        &trade.memo,
+    ];
+
+    // WHERE 句を追加
+    sql.push_str(" WHERE id = ?");
+    params.push(&trade.id);
+
+    // 実行
+    conn.execute(&sql, params.as_slice())
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

@@ -78,3 +78,14 @@ pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelSumma
     let db = &*state;
     crate::service::labels::fetch_all_label_with_trade(db)
 }
+
+#[tauri::command]
+pub fn update_memo(state: State<DbState>, id: Option<i32>, memo_content: String) -> Result<(), String> {
+    let db = &*state;
+    let trade = Trade {
+        id: id,
+        memo: memo_content,
+        ..Default::default()
+    };
+    crate::service::records::update_trade_memo_by_id(db, trade)
+}
