@@ -9,14 +9,23 @@ use tauri::{ generate_context, Context };
 use tauri;
 
 fn get_mt5_dir() -> PathBuf {
-    #[cfg(debug_assertions)]
-    let exe_dir = std::env::var("CARGO_MANIFEST_DIR")
-        .expect("CARGO_MANIFEST_DIR not set");
-    #[cfg(not(debug_assertions))] {
-        let exe_path = std::env::current_exe().expect("Failed to get exe path");
-        let exe_dir = exe_path.parent().expect("Failed to get exe dir");
-    }
-    PathBuf::from(exe_dir).join("mt5")
+    let exe_dir = {
+        #[cfg(debug_assertions)]
+        {
+            PathBuf::from(
+                std::env::var("CARGO_MANIFEST_DIR")
+                    .expect("CARGO_MANIFEST_DIR not set")
+            )
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            let exe_path = std::env::current_exe().expect("Failed to get exe path");
+            exe_path.parent().expect("Failed to get exe dir").to_path_buf()
+        }
+    };
+
+    exe_dir.join("mt5")
 }
 
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
