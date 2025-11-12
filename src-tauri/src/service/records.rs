@@ -65,3 +65,7 @@ pub fn fetch_daily_records(db: &DbState) -> Result<Vec<DailySummary>, String> {
 
     Ok(summary)
 }
+
+pub fn update_trade_memo_by_id(db: &DbState, trade: Trade) -> Result<(), String> {
+    trades::update_trade_memo_by_id(db, trade)
+}
