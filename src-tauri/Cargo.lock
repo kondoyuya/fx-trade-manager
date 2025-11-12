@@ -1265,7 +1265,7 @@ dependencies = [
 
 [[package]]
 name = "fx-trade-manager"
-version = "0.5.10"
+version = "v0.6.0"
 dependencies = [
  "anyhow",
  "chrono",

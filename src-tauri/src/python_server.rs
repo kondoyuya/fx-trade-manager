@@ -8,6 +8,9 @@ use crate::db::DbState;
 use tauri::{ generate_context, Context };
 use tauri;
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 fn get_mt5_dir() -> PathBuf {
     let exe_dir = {
         #[cfg(debug_assertions)]
@@ -103,6 +106,18 @@ pub fn start_python_server(db: &DbState) -> Result<Child, String> {
         println!("Skip construct venv");
     }
 
+    // Python サーバー起動
+    #[cfg(windows)]
+    // Windows起動時にコンソールを開かないようにする
+    let child = Command::new(&python_exe)
+        .arg(&server_path)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .creation_flags(0x08000000)
+        .spawn()
+        .map_err(|e| format!("Failed to start Python server: {}", e))?;
+
+    #[cfg(not(windows))]
     let child = Command::new(&python_exe)
         .arg(&server_path)
         .stdout(Stdio::piped())
@@ -111,6 +126,5 @@ pub fn start_python_server(db: &DbState) -> Result<Child, String> {
         .map_err(|e| format!("Failed to start Python server: {}", e))?;
 
     println!("Python server started (pid = {})", child.id());
-
     Ok(child)
 }

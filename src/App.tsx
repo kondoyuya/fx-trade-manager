@@ -4,6 +4,7 @@ import HistoryPage from "./pages/HistoryPage";
 import ChartPage from "./pages/ChartPage";
 import ImportPage from "./pages/ImportPage";
 import StatisticsPage from "./pages/StatisticsPage";
+import ProfitGraphPage from  "./pages/ProfitGraphPage";
 import { Tab } from "./types";
 import './index.css';
 import { UpdaterDialog } from './components/UpdaterDialog';
@@ -70,6 +71,15 @@ function App() {
           >
             🔎 統計
           </button>
+
+          <button
+            className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
+              activeTab === "profit" ? "bg-gray-700" : ""
+            }`}
+            onClick={() => setActiveTab("profit")}
+          >
+            🏦 収益
+          </button>
         </nav>
 
         {/* フッター */}
@@ -86,6 +96,7 @@ function App() {
         {activeTab === "chart" && <ChartPage />}
         {activeTab === "import" && <ImportPage />}
         {activeTab === "statistics" && <StatisticsPage />}
+        {activeTab === "profit" && <ProfitGraphPage />}
       </main>
     </div>
   );
