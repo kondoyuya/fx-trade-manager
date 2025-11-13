@@ -35,7 +35,7 @@ export const TradeList: React.FC = () => {
     if (displayMode === "円") {
       return <Profit profit={yen ?? 0} toFix={toFix} />;
     } else {
-      return <Profit profit={(pips ?? 0) / 10} toFix={toFix ?? 1} unit="pips" />;
+      return <Profit profit={(pips ?? 0) / 10} toFix={toFix ?? 1} />;
     }
   };
 
