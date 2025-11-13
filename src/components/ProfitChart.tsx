@@ -3,6 +3,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { DailySummary } from "../types";
 import { invoke } from "@tauri-apps/api/core";
 import { DisplayModeToggle, DisplayMode } from "../components/DisplayModeToggle";
+import { getTodayString, getStartOfYearString } from "../utils/time";
 
 function computeCumulativeProfit(
   summaries: DailySummary[],
@@ -27,16 +28,8 @@ function computeCumulativeProfit(
   });
 }
 
-const getTodayString = () => {
-  const today = new Date();
-  const yyyy = today.getFullYear();
-  const mm = String(today.getMonth() + 1).padStart(2, "0");
-  const dd = String(today.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-};
-
 export const ProfitChart: React.FC = () => {
-  const [startDate, setStartDate] = useState("2000-01-01");
+  const [startDate, setStartDate] = useState(getStartOfYearString());
   const [endDate, setEndDate] = useState(getTodayString());
   const [data, setData] = useState<{date: string, cumulativeProfit: number}[]>([]);
   const [summaries, setSummaries] = useState<DailySummary[]>([]);
