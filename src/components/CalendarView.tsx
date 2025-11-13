@@ -130,7 +130,7 @@ const CalendarView: React.FC = () => {
             displayMode={displayMode}
             onLabelClick={handleLabelClick}
             renderMemoButton={(id, memo) => (
-              <UpdateMemoButton tradeId={id} memoContent={memo} />
+              <UpdateMemoButton tradeId={id} memoContent={memo ?? ""} />
             )}
           />
         </div>
