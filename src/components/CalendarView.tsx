@@ -5,6 +5,8 @@ import { DailySummary, Trade } from "../types";
 import "react-calendar/dist/Calendar.css";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
 import { UpdateMemoButton } from "../components/UpdateMemoButton";
+import { formatHoldingTime } from '../utils/time';
+import { Profit } from './format/Profit';
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -35,13 +37,6 @@ const CalendarView: React.FC = () => {
   const handleLabelClick = (trade: Trade) => {
     setSelectedTrade(trade);
     setShowPopup(true);
-  };
-
-  const formatHoldingTime = (seconds: number): string => {
-    const rounded = Math.round(seconds); // 小数点四捨五入
-    const min = Math.floor(rounded / 60);
-    const sec = rounded % 60;
-    return `${min}分${sec}秒`;
   };
 
   // 月間利益を計算
@@ -184,16 +179,8 @@ const CalendarView: React.FC = () => {
                       <td className="px-2 py-1 text-right">
                         {new Date(t.exit_time * 1000).toLocaleTimeString()}
                       </td>
-                      <td
-                        className={`px-2 py-1 text-right font-semibold ${
-                          t.profit >= 0 ? "text-blue-600" : "text-red-600"
-                        }`}
-                      >
-                        {(t.profit > 0 ? "+" : "") +
-                        (displayMode == "円" 
-                          ? t.profit.toFixed(0)
-                          : (t.profit / t.lot / 100).toFixed(1))
-                        }
+                      <td className={`px-2 py-1 text-right font-semibold}`}>
+                        <Profit profit={displayMode == "円" ? t.profit : t.profit / t.lot / 100} />
                       </td>
                       <td className="px-2 py-1 text-center">
                         <button

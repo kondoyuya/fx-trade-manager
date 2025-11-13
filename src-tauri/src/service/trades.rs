@@ -14,10 +14,7 @@ pub fn get_filtered_trades_summary(db: &DbState, filter: TradeFilter) -> Result<
         }
     };
 
-    let result = TradeSummary {
-        trades: trades,
-        ..Default::default()
-    };
+    let result = TradeSummary::from_trades(trades);
 
     Ok(result)
 }

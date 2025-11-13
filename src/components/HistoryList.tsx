@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { TradeSummary } from "../types";
+import { formatHoldingTime } from '../utils/time';
+import { Profit } from "../components/format/Profit"; // Profit コンポーネントをインポート
 
 export const TradeList: React.FC = () => {
   const [startDate, setStartDate] = useState("2025-11-01");
@@ -12,9 +14,13 @@ export const TradeList: React.FC = () => {
     setLoading(true);
     try {
       const result = await invoke<TradeSummary>("get_filtered_trades_summary", {
-        filter: { startDate, endDate },
+        filter: { 
+          start_date: startDate,
+          end_date: endDate 
+        },
       });
       setSummary(result);
+      console.log(result);
     } catch (err) {
       console.error(err);
       setSummary(null);
@@ -67,10 +73,10 @@ export const TradeList: React.FC = () => {
           }}
         >
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>総利益:</strong> {(summary.profit ?? 0).toFixed(2)}
+            <strong>総利益:</strong> <Profit profit={summary.profit ?? 0} />
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>総pips:</strong> {(summary.profit_pips ?? 0).toFixed(2)}
+            <strong>総pips:</strong>  <Profit profit={(summary.profit_pips ?? 0) /10} toFix={1} />
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
             <strong>トレード回数:</strong> {summary.count ?? 0}
@@ -83,10 +89,10 @@ export const TradeList: React.FC = () => {
           </div>
 
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>平均利益（勝ち）:</strong> {(summary.avg_profit_wins ?? 0).toFixed(2)}
+            <strong>平均利益（勝ち）:</strong> <Profit profit={summary.avg_profit_wins ?? 0} />
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>平均利益（負け）:</strong> {(summary.avg_profit_losses ?? 0).toFixed(2)}
+            <strong>平均利益（負け）:</strong> <Profit profit={summary.avg_profit_losses ?? 0} />
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
             <strong>平均pips（勝ち）:</strong> {(summary.avg_profit_pips_wins ?? 0).toFixed(2)}
@@ -95,13 +101,13 @@ export const TradeList: React.FC = () => {
             <strong>平均pips（負け）:</strong> {(summary.avg_profit_pips_losses ?? 0).toFixed(2)}
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>平均保有時間:</strong> {(summary.avg_holding_time ?? 0).toFixed(2)}
+            <strong>平均保有時間:</strong> {formatHoldingTime(summary.avg_holding_time ?? 0)}
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>平均保有時間（勝ち）:</strong> {(summary.avg_holding_time_wins ?? 0).toFixed(2)}
+            <strong>平均保有時間（勝ち）:</strong> {formatHoldingTime(summary.avg_holding_time_wins ?? 0)}
           </div>
           <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
-            <strong>平均保有時間（負け）:</strong> {(summary.avg_holding_time_losses ?? 0).toFixed(2)}
+            <strong>平均保有時間（負け）:</strong> {formatHoldingTime(summary.avg_holding_time_losses ?? 0)}
           </div>
         </div>
       )}
@@ -136,14 +142,8 @@ export const TradeList: React.FC = () => {
                   <td style={{ border: "1px solid #ccc", padding: "8px" }}>
                     {t.entry_time ? new Date(t.entry_time * 1000).toLocaleString() : "-"}
                   </td>
-                  <td
-                    style={{
-                      border: "1px solid #ccc",
-                      padding: "8px",
-                      color: (t.profit ?? 0) >= 0 ? "green" : "red",
-                    }}
-                  >
-                    {(t.profit ?? 0).toFixed(2)}
+                  <td style={{ border: "1px solid #ccc", padding: "8px", textAlign: "right" }}>
+                    <Profit profit={t.profit ?? 0} />
                   </td>
                 </tr>
               ))}

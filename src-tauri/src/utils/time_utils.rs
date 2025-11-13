@@ -40,12 +40,11 @@ pub fn get_unix_range_from_business_date(date_str: &str) -> Option<(i64, i64)> {
     let date = NaiveDate::parse_from_str(date_str, "%Y%m%d").ok()?;
 
     // NY時間で当日17:00（＝JST翌朝6時 or 7時）
-    let start_ny = ny.with_ymd_and_hms(date.year(), date.month(), date.day(), 17, 0, 0).single()?;
-    let start_jst = start_ny.with_timezone(&jst);
-
-    // 翌日の17:00（翌営業日開始）
-    let end_ny = start_ny + chrono::Duration::days(1);
+    let end_ny = ny.with_ymd_and_hms(date.year(), date.month(), date.day(), 17, 0, 0).single()?;
     let end_jst = end_ny.with_timezone(&jst);
+    
+    let end_jst_timestamp = end_jst.timestamp();
+    let start_jst_timestamp = end_jst_timestamp - (60 * 60 * 24);
 
-    Some((start_jst.timestamp(), end_jst.timestamp()))
+    Some((start_jst_timestamp, end_jst_timestamp))
 }
