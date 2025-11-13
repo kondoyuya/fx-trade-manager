@@ -130,9 +130,6 @@ pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>,
     let mut query = String::from("SELECT * FROM trades WHERE 1=1");
     let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-    &dbg!(&filter.start_date);
-    &dbg!(&filter.end_date);
-
     if let Some(start_str) = &filter.start_date {
         let start_yyyymmdd = start_str.replace("-", "");
         if let Some((start_unix, _)) = time_utils::get_unix_range_from_business_date(&start_yyyymmdd) {
@@ -150,7 +147,6 @@ pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>,
     }
 
     query.push_str(" ORDER BY exit_time DESC");
-    println!("{}", query);
 
     let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
     let rows = stmt

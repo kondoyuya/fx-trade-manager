@@ -14,6 +14,8 @@ pub struct TradeSummary {
     pub losses: i32,          // 負けトレード回数
     pub win_total: i32,       // 勝ちトレード総額
     pub loss_total: i32,      // 負けトレード総額
+    pub win_pips_total: i32,             // 勝ちトレード総額
+    pub loss_pips_total: i32,            // 負けトレード総額
     pub avg_profit_wins: f64, // 勝ちトレード平均額
     pub avg_profit_losses: f64, // 負けトレード平均額
     pub avg_profit_pips_wins: f64, // 勝ちトレード平均額
@@ -32,6 +34,8 @@ impl TradeSummary {
         let mut losses = 0;
         let mut win_total = 0;
         let mut loss_total = 0;
+        let mut win_pips_total = 0;
+        let mut loss_pips_total = 0;
         let mut total_holding_time = 0f64;
         let mut total_holding_time_wins = 0f64;
         let mut total_holding_time_losses = 0f64;
@@ -51,12 +55,14 @@ impl TradeSummary {
             if t.profit >= 0 {
                 wins += 1;
                 win_total += t.profit;
+                win_pips_total += t.profit_pips;
                 total_holding_time_wins += holding_time;
                 profit_wins += t.profit as f64;
                 profit_pips_wins += t.profit_pips as f64;
             } else {
                 losses += 1;
                 loss_total += t.profit;
+                loss_pips_total = t.profit_pips;
                 total_holding_time_losses += holding_time;
                 profit_losses += t.profit as f64;
                 profit_pips_losses += t.profit_pips as f64;
@@ -80,6 +86,8 @@ impl TradeSummary {
             losses,
             win_total,
             loss_total,
+            win_pips_total,
+            loss_pips_total,
             avg_profit_wins: avg_profit_wins,
             avg_profit_losses: avg_profit_losses,
             avg_profit_pips_wins: avg_profit_pips_wins,

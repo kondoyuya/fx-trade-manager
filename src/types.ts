@@ -19,6 +19,7 @@ export interface Trade {
   entry_time: number;
   exit_time: number;
   profit: number;
+  profit_pips: number;
   swap: number;
   memo: string;
 }
@@ -34,6 +35,8 @@ export interface TradeSummary {
 
   win_total: number;             // 勝ちトレード総額
   loss_total: number;            // 負けトレード総額
+  win_pips_total: number;             // 勝ちトレード総額
+  loss_pips_total: number;            // 負けトレード総額
 
   avg_profit_wins: number;       // 勝ちトレード平均額
   avg_profit_losses: number;     // 負けトレード平均額
