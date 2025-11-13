@@ -1,124 +1,160 @@
-import { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { LabelSelectPopup } from "../components/LabelSelectButton";
-import { UpdateMemoButton } from "../components/UpdateMemoButton";
+import { TradeSummary } from "../types";
 
-interface Trade {
-  id: number;
-  pair: string;
-  side: string;
-  lot: number;
-  entry_rate: number;
-  exit_rate: number;
-  entry_time: number;
-  exit_time: number;
-  profit: number;
-  swap: number;
-  memo: string;
-}
+export const TradeList: React.FC = () => {
+  const [startDate, setStartDate] = useState("2025-11-01");
+  const [endDate, setEndDate] = useState("2025-11-13");
+  const [summary, setSummary] = useState<TradeSummary | null>(null);
+  const [loading, setLoading] = useState(false);
 
-function unixToJstString(unix: number): string {
-  const date = new Date(unix * 1000);
-  return date.toLocaleString("ja-JP", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Tokyo",
-  });
-}
-
-const HistoryList: React.FC = () => {
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [showPopup, setShowPopup] = useState(false);
-  const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
-
-  // 初期ロード：トレード一覧
-  useEffect(() => {
-    async function fetchTrades() {
-      try {
-        const data = await invoke<Trade[]>("get_all_trades");
-        setTrades(data);
-      } catch (error) {
-        console.error("❌ Failed to fetch trades:", error);
-      }
+  const fetchTrades = async () => {
+    setLoading(true);
+    try {
+      const result = await invoke<TradeSummary>("get_filtered_trades_summary", {
+        filter: { startDate, endDate },
+      });
+      setSummary(result);
+    } catch (err) {
+      console.error(err);
+      setSummary(null);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchTrades();
-  }, []);
+  }, [startDate, endDate]);
 
   return (
-    <main className="container mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Trades</h1>
-      <p className="mb-4">Total trades: {trades.length}</p>
+    <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+      <h2>トレード履歴</h2>
 
-      <table className="table-auto border-collapse border border-gray-300 w-full">
-        <thead>
-          <tr className="bg-gray-100">
-            {[
-              "ID",
-              "Pair",
-              "Side",
-              "Lot",
-              "Entry Rate",
-              "Exit Rate",
-              "Entry Time",
-              "Exit Time",
-              "Profit",
-              "Swap",
-              "Memo",
-              "Label",
-            ].map((h) => (
-              <th key={h} className="border border-gray-300 p-2">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {trades.map((r) => (
-            <tr key={r.id}>
-              <td className="border border-gray-300 p-2">{r.id}</td>
-              <td className="border border-gray-300 p-2">{r.pair}</td>
-              <td className="border border-gray-300 p-2">{r.side}</td>
-              <td className="border border-gray-300 p-2">{r.lot}</td>
-              <td className="border border-gray-300 p-2">{r.entry_rate}</td>
-              <td className="border border-gray-300 p-2">{r.exit_rate}</td>
-              <td className="border border-gray-300 p-2">
-                {unixToJstString(r.entry_time)}
-              </td>
-              <td className="border border-gray-300 p-2">
-                {unixToJstString(r.exit_time)}
-              </td>
-              <td className="border border-gray-300 p-2">{r.profit}</td>
-              <td className="border border-gray-300 p-2">{r.swap}</td>
-              <td className="border border-gray-300 p-2"><UpdateMemoButton tradeId={r.id} memoContent={r.memo} /></td>
-              <td className="border border-gray-300 p-2">
-                <button
-                  onClick={() => {
-                    setSelectedTrade(r);
-                    setShowPopup(true);
-                  }}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                >
-                  ＋ ラベル登録
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {/* 日付フィルター */}
+      <div style={{ marginBottom: "20px", display: "flex", alignItems: "center", gap: "10px" }}>
+        <label>
+          開始日：
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            style={{ marginLeft: "5px" }}
+          />
+        </label>
+        <label>
+          終了日：
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            style={{ marginLeft: "5px" }}
+          />
+        </label>
+        <button onClick={fetchTrades} style={{ padding: "5px 10px", cursor: "pointer" }}>
+          更新
+        </button>
+      </div>
 
-      {showPopup && (
-        <LabelSelectPopup
-          trade={selectedTrade}
-          onClose={() => setShowPopup(false)}
-        />
+      {/* 統計データ */}
+      {summary && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+            gap: "10px",
+            marginBottom: "20px",
+          }}
+        >
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>総利益:</strong> {(summary.profit ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>総pips:</strong> {(summary.profit_pips ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>トレード回数:</strong> {summary.count ?? 0}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>勝ちトレード:</strong> {summary.wins ?? 0} ({(summary.win_total ?? 0).toFixed(2)})
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>負けトレード:</strong> {summary.losses ?? 0} ({(summary.loss_total ?? 0).toFixed(2)})
+          </div>
+
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均利益（勝ち）:</strong> {(summary.avg_profit_wins ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均利益（負け）:</strong> {(summary.avg_profit_losses ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均pips（勝ち）:</strong> {(summary.avg_profit_pips_wins ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均pips（負け）:</strong> {(summary.avg_profit_pips_losses ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均保有時間:</strong> {(summary.avg_holding_time ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均保有時間（勝ち）:</strong> {(summary.avg_holding_time_wins ?? 0).toFixed(2)}
+          </div>
+          <div style={{ padding: "10px", border: "1px solid #ccc", borderRadius: "5px" }}>
+            <strong>平均保有時間（負け）:</strong> {(summary.avg_holding_time_losses ?? 0).toFixed(2)}
+          </div>
+        </div>
       )}
-    </main>
+
+      {/* ローディング */}
+      {loading && <div>読み込み中...</div>}
+
+      {/* トレード一覧（スクロール可能） */}
+      {summary && summary.trades.length > 0 ? (
+        <div
+          style={{
+            maxHeight: "400px",
+            overflowY: "auto",
+            border: "1px solid #ccc",
+            borderRadius: "5px",
+          }}
+        >
+          <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "center" }}>
+            <thead style={{ position: "sticky", top: 0, background: "#f0f0f0", zIndex: 1 }}>
+              <tr>
+                <th style={{ border: "1px solid #ccc", padding: "8px" }}>ID</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px" }}>通貨ペア</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px" }}>日時</th>
+                <th style={{ border: "1px solid #ccc", padding: "8px" }}>損益</th>
+              </tr>
+            </thead>
+            <tbody>
+              {summary.trades.map((t) => (
+                <tr key={t.id} style={{ borderBottom: "1px solid #eee" }}>
+                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>{t.id}</td>
+                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>{t.pair ?? "-"}</td>
+                  <td style={{ border: "1px solid #ccc", padding: "8px" }}>
+                    {t.entry_time ? new Date(t.entry_time * 1000).toLocaleString() : "-"}
+                  </td>
+                  <td
+                    style={{
+                      border: "1px solid #ccc",
+                      padding: "8px",
+                      color: (t.profit ?? 0) >= 0 ? "green" : "red",
+                    }}
+                  >
+                    {(t.profit ?? 0).toFixed(2)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        !loading && <div>該当するトレードはありません。</div>
+      )}
+    </div>
   );
 };
 
-export default HistoryList;
+export default TradeList;
