@@ -38,9 +38,9 @@ pub fn get_daily_records(state: State<DbState>) -> Result<Vec<DailySummary>, Str
 }
 
 #[tauri::command]
-pub fn get_candles(state: State<DbState>) -> Result<Vec<Candle>, String> {
+pub fn get_candles(state: State<DbState>, interval: i64) -> Result<Vec<Candle>, String> {
     let db = &*state;
-    crate::service::candles::fetch_candles(db)
+    crate::service::candles::fetch_candles(db, interval)
 }
 
 #[tauri::command]

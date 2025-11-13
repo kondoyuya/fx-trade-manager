@@ -15,25 +15,25 @@ import { UpdateOHLCButton } from "../components/UpdateOHLCButton";
 interface ChartViewProps {}
 
 interface Candle {
-  time: number; // UNIX秒
-  open: number;
-  high: number;
-  low: number;
-  close: number;
+    time: number; // UNIX秒
+    open: number;
+    high: number;
+    low: number;
+    close: number;
 }
 
 interface Trade {
-  id: number;
-  pair: string;
-  side: string;
-  lot: number;
-  entry_rate: number;
-  exit_rate: number;
-  entry_time: number;
-  exit_time: number;
-  profit: number;
-  swap: number;
-  memo: string;
+    id: number;
+    pair: string;
+    side: string;
+    lot: number;
+    entry_rate: number;
+    exit_rate: number;
+    entry_time: number;
+    exit_time: number;
+    profit: number;
+    swap: number;
+    memo: string;
 }
 
 // --- Primitive Classes ---
@@ -42,54 +42,55 @@ class DebugPaneView implements IPrimitivePaneView {
     constructor(primitive: DebugPrimitive) {
         this._primitive = primitive;
     }
+
     renderer() {
         const paneView = this;
-        
         return {
             draw: (target: any) => {
                 target.useBitmapCoordinateSpace((scope: any) => {
-                    if (scope.context === null) return;
+                    if (!scope.context) return;
                     const param = paneView._primitive.param();
                     if (!param) return;
                     const { series, chart } = param;
                     const ctx = scope.context;
-                    
+
                     const trades = paneView._primitive.trades();
+                    const TIME_OFFSET = 3600 * 9;
+
                     for (const trade of trades) {
-                        const isSell = (trade.side === "売");
+                        const isSell = trade.side === "売";
                         const arrowSize = 10;
 
-                        const TIME_OFFSET = 3600 * 9; 
-                        const entryTimeFloor = Math.floor(trade.entry_time / 60) * 60;
-                        const exitTimeFloor = Math.floor(trade.exit_time / 60) * 60;
+                        const entryTimeFloor = Math.floor(trade.entry_time / paneView._primitive.interval()) * paneView._primitive.interval();
+                        const exitTimeFloor = Math.floor(trade.exit_time / paneView._primitive.interval()) * paneView._primitive.interval();
+
 
                         const entryX = chart.timeScale().timeToCoordinate((entryTimeFloor + TIME_OFFSET) as Time);
                         const entryY = series.priceToCoordinate(trade.entry_rate);
                         const exitX = chart.timeScale().timeToCoordinate((exitTimeFloor + TIME_OFFSET) as Time);
                         const exitY = series.priceToCoordinate(trade.exit_rate);
+
                         if (entryX !== null && entryY !== null && exitX !== null && exitY !== null) {
-                            ctx.strokeStyle = "black"
+                            ctx.strokeStyle = "black";
                             ctx.lineWidth = 2;
-                            ctx.setLineDash([7, 3]); 
-                            
+                            ctx.setLineDash([7, 3]);
                             ctx.beginPath();
                             ctx.moveTo(entryX, entryY);
                             ctx.lineTo(exitX, exitY);
                             ctx.stroke();
-                            ctx.setLineDash([]); 
-                            
+                            ctx.setLineDash([]);
+
                             const drawArrow = (x: number, y: number, isUp: boolean, color: string) => {
                                 ctx.fillStyle = color;
                                 ctx.beginPath();
-                                
                                 if (isUp) {
-                                    ctx.moveTo(x, y + arrowSize * 0.5); 
-                                    ctx.lineTo(x - arrowSize * 0.5, y - arrowSize * 0.5); 
-                                    ctx.lineTo(x + arrowSize * 0.5, y - arrowSize * 0.5); 
+                                    ctx.moveTo(x, y + arrowSize * 0.5);
+                                    ctx.lineTo(x - arrowSize * 0.5, y - arrowSize * 0.5);
+                                    ctx.lineTo(x + arrowSize * 0.5, y - arrowSize * 0.5);
                                 } else {
-                                    ctx.moveTo(x, y - arrowSize * 0.5); 
-                                    ctx.lineTo(x - arrowSize * 0.5, y + arrowSize * 0.5); 
-                                    ctx.lineTo(x + arrowSize * 0.5, y + arrowSize * 0.5); 
+                                    ctx.moveTo(x, y - arrowSize * 0.5);
+                                    ctx.lineTo(x - arrowSize * 0.5, y + arrowSize * 0.5);
+                                    ctx.lineTo(x + arrowSize * 0.5, y + arrowSize * 0.5);
                                 }
                                 ctx.closePath();
                                 ctx.fill();
@@ -117,15 +118,15 @@ class DebugPaneView implements IPrimitivePaneView {
                             };
 
                             const entryIsUp = isSell;
-                            const entryColor = isSell ? 'blue' : 'red';
+                            const entryColor = isSell ? "blue" : "red";
                             drawArrow(entryX, entryY, entryIsUp, entryColor);
-                            
+
                             if (trade.profit > 0) drawCircle(exitX, exitY);
                             else drawCloss(exitX, exitY);
                         }
                     }
                 });
-            }
+            },
         };
     }
 }
@@ -133,18 +134,20 @@ class DebugPaneView implements IPrimitivePaneView {
 class DebugPrimitive implements ISeriesPrimitive<Time> {
     private _param: SeriesAttachedParameter<Time> | null = null;
     private readonly _paneView: DebugPaneView;
-    private _trades: Trade[] = []; 
-    
-    constructor() {
+    private _trades: Trade[] = [];
+    private _interval: number; // 秒
+
+    constructor(interval: number) {
+        this._interval = interval;
         this._paneView = new DebugPaneView(this);
     }
-    public trades() { return this._trades; }
 
-    public updateTrades(trades: Trade[]) {
+    trades() { return this._trades; }
+    interval() { return this._interval; }
+
+    updateTrades(trades: Trade[]) {
         this._trades = trades;
-        if (this._param) {
-            this._param.requestUpdate(); 
-        }
+        if (this._param) this._param.requestUpdate();
     }
 
     attached(param: SeriesAttachedParameter<Time>) { this._param = param; }
@@ -154,109 +157,94 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
     updateAllViews() {}
 }
 
-export interface ChartViewHandle {
-  scrollToTime: (unixTime: number) => void;
-}
-
 const ChartView: React.FC<ChartViewProps> = () => {
     const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
+    const candleSeriesRef = useRef<CandlestickSeries<Time> | null>(null);
     const primitiveRef = useRef<DebugPrimitive | null>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
-    const [candleData, setCandleData] = useState<CandlestickData<Time>[]>([]);
-    const [searchTime, setSearchTime] = useState<string>("");
+
+    const [interval, setInterval] = useState<number>(60); // デフォルト 1分足
     const [trades, setTrades] = useState<Trade[]>([]);
     const [visibleTrades, setVisibleTrades] = useState<Trade[]>([]);
+    const [searchTime, setSearchTime] = useState<string>("");
     const [showPopup, setShowPopup] = useState(false);
     const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
 
-    // ラベル登録ボタンが押されたとき
     const handleLabelClick = (trade: Trade) => {
         setSelectedTrade(trade);
         setShowPopup(true);
     };
 
-    // --- (1) DBからデータを取得 ---
+    // --- チャート再生成 ---
     useEffect(() => {
-        async function fetchCandles() {
+        async function fetchAndRender() {
+            // 既存チャート破棄
+            if (chartRef.current) {
+                chartRef.current.remove();
+                chartRef.current = null;
+                candleSeriesRef.current = null;
+                primitiveRef.current = null;
+            }
+            if (!chartContainerRef.current) return;
+
+            const chart = createChart(chartContainerRef.current, {
+                width: 800,
+                height: 600,
+                timeScale: { timeVisible: true, barSpacing: 12, rightOffset: 10 },
+            });
+            chartRef.current = chart;
+
+            // ローソク足シリーズ
+            const series = chart.addSeries(CandlestickSeries, {
+                upColor: "white",
+                borderUpColor: "black",
+                wickUpColor: "black",
+                downColor: "silver",
+                borderDownColor: "black",
+                wickDownColor: "black",
+            });
+            candleSeriesRef.current = series;
+
+            // Primitive
+            const primitive = new DebugPrimitive(interval);
+            primitiveRef.current = primitive;
+            series.attachPrimitive(primitive);
+
+            // ローソク足取得
             try {
-                const candles: Candle[] = await invoke("get_candles");
+                const candles: Candle[] = await invoke("get_candles", { interval });
                 const formatted = candles.map((c) => ({
-                    time: c.time + 3600*9 as Time,
+                    time: c.time + 3600 * 9 as Time,
                     open: c.open,
                     high: c.high,
                     low: c.low,
                     close: c.close,
                 }));
-                setCandleData(formatted);
-            } catch (err) {
-                console.error("DBからローソク足取得失敗:", err);
-            }
-        }
+                series.setData(formatted);
 
-        async function fetchTrades() {
+                // 初期表示
+                const times = formatted.map((c) => c.time as number);
+                const to = times[times.length - 1];
+                const from = times[Math.max(0, times.length - 100)];
+                chart.timeScale().setVisibleRange({ from, to });
+            } catch (err) {
+                console.error("ローソク足取得失敗:", err);
+            }
+
+            // トレード取得
             try {
-                const data = await invoke<Trade[]>("get_all_trades");
+                const data: Trade[] = await invoke("get_all_trades");
                 setTrades(data);
+                primitive.updateTrades(data);
             } catch (err) {
-                console.error("DBからトレード履歴取得失敗:", err);
+                console.error("トレード取得失敗:", err);
             }
         }
 
-        fetchCandles();
-        fetchTrades();
-    }, []);
+        fetchAndRender();
+    }, [interval]);
 
-    // --- (2) データ取得後にチャートを描画 ---
-    useEffect(() => {
-        if (!chartContainerRef.current || candleData.length === 0) return;
-
-        const chart = createChart(chartContainerRef.current, {
-            width: 800,
-            height: 600,
-            timeScale: { 
-                timeVisible: true, // 時間をHH:MMで表示する
-                fixRightEdge: false,  // 右端を固定するか
-                barSpacing: 12, 
-                rightOffset: 10,
-            },
-        });
-        const candleSeries = chart.addSeries(CandlestickSeries, {
-            upColor: 'white',
-            borderUpColor: 'black',
-            wickUpColor: 'brack',
-            downColor: 'silver',
-            borderDownColor: 'brack',
-            wickDownColor: 'brack',
-        });
-        candleSeries.setData(candleData);
-
-        chartRef.current = chart;
-
-        // チャート上にトレードを表示
-        const primitive = new DebugPrimitive();
-        primitiveRef.current = primitive;
-
-        candleSeries.attachPrimitive(primitive);
-
-        // 初期は直近100本を拡大表示
-        const times = candleData.map(c => c.time  as Time);
-        const to = times[times.length - 1];
-        const from = times[Math.max(0, times.length - 100)];
-        chart.timeScale().setVisibleRange({ from, to });
-
-        return () => {
-            chart.remove();
-        };
-    }, [candleData]); // データが入ったら実行
-
-    useEffect(() => {
-        if (primitiveRef.current) {
-            // trades Stateが更新されたらPrimitiveに最新のデータを渡し、再描画を要求
-            primitiveRef.current.updateTrades(trades);
-        }
-    }, [trades]); // tradesデータが入ったら実行
-
-    // 描画範囲のトレード一覧を取得
+    // --- 可視範囲内トレード更新 ---
     useEffect(() => {
         const chart = chartRef.current;
         if (!chart || trades.length === 0) return;
@@ -276,42 +264,40 @@ const ChartView: React.FC<ChartViewProps> = () => {
             setVisibleTrades(filtered);
         };
 
-        // 初回 + 監視登録
         updateVisibleTrades();
         chart.timeScale().subscribeVisibleTimeRangeChange(updateVisibleTrades);
-
-        // クリーンアップ時に解除
         return () => {
             chart.timeScale().unsubscribeVisibleTimeRangeChange(updateVisibleTrades);
         };
-    }, [trades, candleData]);
+    }, [trades]);
 
-    // --- (3) 指定時刻検索 ---
+    // --- 指定時刻検索 ---
     const handleSearch = () => {
-        if (!chartRef.current || candleData.length === 0 || !searchTime) return;
-        const targetUnix = Math.floor(new Date(searchTime).getTime() / 1000) + 3600*9;
-        console.log(targetUnix);
+        if (!chartRef.current || !searchTime) return;
 
-        // 最も近いローソク足を探す
-        const closest = candleData.reduce((prev, curr) => {
-            return Math.abs((curr.time as number) - targetUnix) <
-                Math.abs((prev.time as number) - targetUnix)
+        const targetUnix = Math.floor(new Date(searchTime).getTime() / 1000) + 3600 * 9;
+
+        const series = candleSeriesRef.current;
+        if (!series) return;
+
+        const data = (series as any)._data as CandlestickData<Time>[]; // 内部データ参照
+        if (!data || data.length === 0) return;
+
+        const closest = data.reduce((prev, curr) =>
+            Math.abs((curr.time as number) - targetUnix) <
+            Math.abs((prev.time as number) - targetUnix)
                 ? curr
-                : prev;
-        });
+                : prev
+        );
 
-        console.log(closest);
-
-        const rangeSize = 50; // 前後にどのくらい表示するか
-        const from = ((closest.time as number) - rangeSize * 60) as Time;
-        const to = ((closest.time as number) + rangeSize * 60) as Time;
-        
+        const rangeSize = 50;
+        const from = (closest.time as number) - rangeSize * 60;
+        const to = (closest.time as number) + rangeSize * 60;
         chartRef.current.timeScale().setVisibleRange({ from, to });
     };
 
     return (
         <div className="flex flex-col items-center mt-4 space-y-4">
-            {/* 🔍 検索フォーム */}
             <div className="flex items-center space-x-2">
                 <input
                     type="datetime-local"
@@ -326,13 +312,18 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     検索
                 </button>
 
-                <UpdateOHLCButton/>
+                <select value={interval} onChange={(e) => setInterval(Number(e.target.value))} className="border rounded p-1">
+                    <option value={60}>1分足</option>
+                    <option value={300}>5分足</option>
+                    <option value={900}>15分足</option>
+                    <option value={3600}>1時間足</option>
+                </select>
+
+                <UpdateOHLCButton />
             </div>
 
-            {/* 📈 チャート本体 */}
             <div ref={chartContainerRef} style={{ width: "800px", height: "600px" }} />
 
-            {/* 💹 可視範囲内トレード一覧 */}
             <div className="w-[800px] mt-4 border p-2 rounded bg-gray-50">
                 <h2 className="font-bold mb-2">現在画面内のトレード</h2>
                 {visibleTrades.length === 0 ? (
@@ -348,6 +339,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
                                 <th className="p-1">Entry</th>
                                 <th className="p-1">Exit</th>
                                 <th className="p-1">損益</th>
+                                <th className="p-1">操作</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -355,26 +347,13 @@ const ChartView: React.FC<ChartViewProps> = () => {
                                 <tr key={t.id} className="border-b">
                                     <td className="p-1 text-center">{t.id}</td>
                                     <td className="p-1 text-center">{t.pair}</td>
-                                    <td className={`p-1 text-center ${t.side === "買" ? "text-red-600" : "text-blue-600"}`}>
-                                        {t.side}
-                                    </td>
+                                    <td className={`p-1 text-center ${t.side === "買" ? "text-red-600" : "text-blue-600"}`}>{t.side}</td>
                                     <td className="p-1 text-right">{t.lot}</td>
                                     <td className="p-1 text-right">{new Date(t.entry_time * 1000).toLocaleString()}</td>
                                     <td className="p-1 text-right">{new Date(t.exit_time * 1000).toLocaleString()}</td>
-                                    <td
-                                        className={`p-1 text-right ${
-                                            t.profit >= 0 ? "text-green-600" : "text-red-600"
-                                        }`}
-                                    >
-                                        {t.profit.toFixed(0)}
-                                    </td>
+                                    <td className={`p-1 text-right ${t.profit >= 0 ? "text-green-600" : "text-red-600"}`}>{t.profit.toFixed(0)}</td>
                                     <td className="p-1 text-center">
-                                        <button
-                                            onClick={() => handleLabelClick(t)}
-                                            className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
-                                        >
-                                            ラベル登録
-                                        </button>
+                                        <button onClick={() => handleLabelClick(t)} className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600">ラベル登録</button>
                                     </td>
                                 </tr>
                             ))}
@@ -382,12 +361,9 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     </table>
                 )}
 
-        {showPopup && selectedTrade && (
-            <LabelSelectPopup
-                trade={selectedTrade}
-                onClose={() => setShowPopup(false)}
-            />
-        )}
+                {showPopup && selectedTrade && (
+                    <LabelSelectPopup trade={selectedTrade} onClose={() => setShowPopup(false)} />
+                )}
             </div>
         </div>
     );
