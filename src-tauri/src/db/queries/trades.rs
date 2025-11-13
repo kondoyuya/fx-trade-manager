@@ -146,7 +146,18 @@ pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>,
         }
     }
 
+    // 保有時間（秒）でのフィルター
+    if let Some(min_holding) = filter.min_holding_time {
+        query.push_str(" AND (exit_time - entry_time) >= ?");
+        params_vec.push(Box::new(min_holding));
+    }
+    if let Some(max_holding) = filter.max_holding_time {
+        query.push_str(" AND (exit_time - entry_time) <= ?");
+        params_vec.push(Box::new(max_holding));
+    }
+
     query.push_str(" ORDER BY exit_time DESC");
+    println!("{}", query);
 
     let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
     let rows = stmt

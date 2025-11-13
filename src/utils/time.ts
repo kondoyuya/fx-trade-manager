@@ -5,6 +5,13 @@ export const formatHoldingTime = (seconds: number): string => {
   return `${min}分${sec}秒`;
 };
 
+export const parseTimeToSeconds = (timeStr: string) => {
+  const parts = timeStr.split(":").map(Number);
+  if (parts.length !== 3) return 0;
+  const [hh, mm, ss] = parts;
+  return hh * 3600 + mm * 60 + ss;
+};
+
 export const getStartOfYearString = () => {
   const today = new Date();
   const yyyy = today.getFullYear();
