@@ -5,6 +5,10 @@ on:
     tags:
       - "v*"
 
+env:
+  VERSION: ${{ steps.version.outputs.VERSION }}
+  BRANCH_NAME: auto/version-bump-${{ github.ref_name }}
+
 jobs:
   release:
     runs-on: windows-latest
@@ -63,10 +67,10 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version to $VERSION [skip ci]"
-          branch: "auto/version-bump-${GITHUB_REF_NAME#v}"
-          title: "chore: bump version to $VERSION"
-          body: "This PR bumps tauri.conf.json version to $VERSION"
+          commit-message: bump version to ${{ env.VERSION }} 
+          branch: ${{ env.BRANCH_NAME }}
+          title: bump version to ${{ env.VERSION }}
+          body: This PR bumps tauri.conf.json version to ${{ env.VERSION }}
           base: main
           labels: version-bump
 
