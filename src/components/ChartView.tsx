@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
     createChart,
     Time,
+    ISeriesApi,
     ISeriesPrimitive,
     SeriesAttachedParameter,
     IPrimitivePaneView,
@@ -158,7 +159,7 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
 
 const ChartView: React.FC<ChartViewProps> = () => {
     const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
-    const candleSeriesRef = useRef<InstanceType<typeof CandlestickSeries> | null>(null);
+    const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
     const primitiveRef = useRef<DebugPrimitive | null>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
 
@@ -194,7 +195,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
             chartRef.current = chart;
 
             // ローソク足シリーズ
-            const series = chart.addSeries<typeof CandlestickSeries>(CandlestickSeries, {
+            const series = chart.addSeries(CandlestickSeries, {
                 upColor: "white",
                 borderUpColor: "black",
                 wickUpColor: "black",
