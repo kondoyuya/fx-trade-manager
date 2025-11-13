@@ -1,7 +1,9 @@
-use rusqlite::{params, Result};
+use rusqlite::{params, Result, params_from_iter};
 
 use crate::db::DbState;
 use crate::models::db::trade::Trade;
+use crate::models::filter::trade_filter::TradeFilter;
+use crate::utils::time_utils;
 
 pub fn insert_trade(state: &DbState, trade: Trade) -> Result<(), String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
@@ -120,4 +122,56 @@ pub fn update_trade_memo_by_id(state: &DbState, trade: Trade) -> Result<(), Stri
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let mut query = String::from("SELECT * FROM trades WHERE 1=1");
+    let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
+    if let Some(start_str) = &filter.start_date {
+        let start_yyyymmdd = start_str.replace("-", "");
+        if let Some((start_unix, _)) = time_utils::get_unix_range_from_business_date(&start_yyyymmdd) {
+            query.push_str(" AND exit_time >= ?");
+            params_vec.push(Box::new(start_unix));
+        }
+    }
+
+    if let Some(end_str) = &filter.end_date {
+        let end_yyyymmdd = end_str.replace("-", "");
+        if let Some((_, end_unix)) = time_utils::get_unix_range_from_business_date(&end_yyyymmdd) {
+            query.push_str(" AND exit_time < ?");
+            params_vec.push(Box::new(end_unix));
+        }
+    }
+
+    query.push_str(" ORDER BY exit_time DESC");
+
+    let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map(params_from_iter(params_vec.iter()), |row| {
+            Ok(Trade {
+                id: row.get(0)?,
+                pair: row.get(1)?,
+                side: row.get(2)?,
+                lot: row.get(3)?,
+                entry_rate: row.get(4)?,
+                exit_rate: row.get(5)?,
+                entry_time: row.get(6)?,
+                exit_time: row.get(7)?,
+                profit: row.get(8)?,
+                profit_pips: row.get(9)?,
+                swap: row.get(10)?,
+                memo: row.get(11)?,
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut trades = Vec::new();
+    for r in rows {
+        trades.push(r.map_err(|e| e.to_string())?);
+    }
+
+    Ok(trades)
 }

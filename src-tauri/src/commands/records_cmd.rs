@@ -6,6 +6,8 @@ use crate::models::db::trade::Trade;
 use crate::models::db::label::Label;
 use crate::models::service::daily_summary::DailySummary;
 use crate::models::service::label_summary::LabelSummary;
+use crate::models::service::trade_summary::TradeSummary;
+use crate::models::filter::trade_filter::TradeFilter;
 
 #[tauri::command]
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
@@ -88,4 +90,10 @@ pub fn update_memo(state: State<DbState>, id: Option<i32>, memo_content: String)
         ..Default::default()
     };
     crate::service::records::update_trade_memo_by_id(db, trade)
+}
+
+#[tauri::command]
+pub fn get_filtered_trades_summary(state: State<DbState>, filter: TradeFilter) -> Result<TradeSummary, String> {
+    let db = &*state;
+    crate::service::trades::get_filtered_trades_summary(db, filter)
 }

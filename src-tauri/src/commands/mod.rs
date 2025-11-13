@@ -21,6 +21,7 @@ macro_rules! register_commands {
             crate::commands::records_cmd::get_labels_for_trade,
             crate::commands::handlers::fetch_and_update_ohlc,
             crate::commands::records_cmd::update_memo,
+            crate::commands::records_cmd::get_filtered_trades_summary,
         ])
     };
 }

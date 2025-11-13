@@ -37,16 +37,14 @@ function App() {
           >
             📅 カレンダー
           </button>
-          {import.meta.env.DEV && (
-            <button
-              className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
-                activeTab === "history" ? "bg-gray-700" : ""
-              }`}
-              onClick={() => setActiveTab("history")}
-            >
-              📊 取引履歴 (開発環境のみ)
-            </button>
-          )}
+          <button
+            className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
+              activeTab === "history" ? "bg-gray-700" : ""
+            }`}
+            onClick={() => setActiveTab("history")}
+          >
+            📊 取引履歴
+          </button>
           <button
             className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
               activeTab === "chart" ? "bg-gray-700" : ""
