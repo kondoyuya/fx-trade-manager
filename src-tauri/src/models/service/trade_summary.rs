@@ -62,7 +62,7 @@ impl TradeSummary {
             } else {
                 losses += 1;
                 loss_total += t.profit;
-                loss_pips_total = t.profit_pips;
+                loss_pips_total += t.profit_pips;
                 total_holding_time_losses += holding_time;
                 profit_losses += t.profit as f64;
                 profit_pips_losses += t.profit_pips as f64;

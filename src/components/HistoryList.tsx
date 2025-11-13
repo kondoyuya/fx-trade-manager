@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { TradeSummary } from "../types";
-import { formatHoldingTime } from "../utils/time";
-import { Profit } from "../components/format/Profit";
+import { formatHoldingTime, getStartOfMonthString, getTodayString } from "../utils/time";
+import { formatProfit } from './format/Profit';
 import { DisplayModeToggle, DisplayMode } from "../components/DisplayModeToggle";
+import { TradeTable } from "../components/TradeTable";
 
 export const TradeList: React.FC = () => {
-  const [startDate, setStartDate] = useState("2025-11-01");
-  const [endDate, setEndDate] = useState("2025-11-13");
+  const [startDate, setStartDate] = useState(getStartOfMonthString);
+  const [endDate, setEndDate] = useState(getTodayString);
   const [summary, setSummary] = useState<TradeSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("円");
@@ -30,14 +31,6 @@ export const TradeList: React.FC = () => {
   useEffect(() => {
     fetchTrades();
   }, [startDate, endDate]);
-
-  const formatProfit = (yen?: number | null, pips?: number | null, toFix?: number) => {
-    if (displayMode === "円") {
-      return <Profit profit={yen ?? 0} toFix={toFix} />;
-    } else {
-      return <Profit profit={(pips ?? 0) / 10} toFix={toFix ?? 1} />;
-    }
-  };
 
   const winRate =
     summary && summary.count > 0
@@ -87,16 +80,16 @@ export const TradeList: React.FC = () => {
       {summary ? (
         <>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard title="総損益" color="green" value={formatProfit(summary.profit, summary.profit_pips)} />
+            <StatCard title="総損益" color="green" value={formatProfit(displayMode, summary.profit, summary.profit_pips)} />
             <StatCard title="トレード回数" color="blue" value={summary.count ?? 0} />
             <StatCard title="勝ちトレード" color="emerald" value={summary.wins ?? 0} />
             <StatCard title="負けトレード" color="rose" value={summary.losses ?? 0} />
             <StatCard title="勝率" color="yellow" value={`${winRate}%`} />
 
-            <StatCard title="総利益" color="teal" value={formatProfit(summary.win_total, summary.win_pips_total)} />
-            <StatCard title="総損失" color="red" value={formatProfit(summary.loss_total, summary.loss_pips_total)} />
-            <StatCard title="平均損益（勝ち）" color="cyan" value={formatProfit(summary.avg_profit_wins, summary.avg_profit_pips_wins)} />
-            <StatCard title="平均損益（負け）" color="orange" value={formatProfit(summary.avg_profit_losses, summary.avg_profit_pips_losses)} />
+            <StatCard title="総利益" color="teal" value={formatProfit(displayMode, summary.win_total, summary.win_pips_total)} />
+            <StatCard title="総損失" color="red" value={formatProfit(displayMode, summary.loss_total, summary.loss_pips_total)} />
+            <StatCard title="平均損益（勝ち）" color="cyan" value={formatProfit(displayMode, summary.avg_profit_wins, summary.avg_profit_pips_wins)} />
+            <StatCard title="平均損益（負け）" color="orange" value={formatProfit(displayMode, summary.avg_profit_losses, summary.avg_profit_pips_losses)} />
 
             <StatCard title="平均保有時間" color="gray" value={formatHoldingTime(summary.avg_holding_time ?? 0)} />
             <StatCard title="平均保有時間（勝ち）" color="lime" value={formatHoldingTime(summary.avg_holding_time_wins ?? 0)} />
@@ -104,64 +97,12 @@ export const TradeList: React.FC = () => {
           </div>
 
           {/* トレード一覧 */}
-          {summary.trades.length > 0 ? (
-            <div
-              style={{
-                maxHeight: "400px",
-                overflowY: "auto",
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-              }}
-            >
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  textAlign: "center",
-                }}
-              >
-                <thead
-                  style={{
-                    position: "sticky",
-                    top: 0,
-                    background: "#f0f0f0",
-                    zIndex: 1,
-                  }}
-                >
-                  <tr>
-                    <th style={{ border: "1px solid #ccc", padding: "8px" }}>ID</th>
-                    <th style={{ border: "1px solid #ccc", padding: "8px" }}>通貨ペア</th>
-                    <th style={{ border: "1px solid #ccc", padding: "8px" }}>日時</th>
-                    <th style={{ border: "1px solid #ccc", padding: "8px" }}>損益</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {summary.trades.map((t) => (
-                    <tr key={t.id} style={{ borderBottom: "1px solid #eee" }}>
-                      <td style={{ border: "1px solid #ccc", padding: "8px" }}>{t.id}</td>
-                      <td style={{ border: "1px solid #ccc", padding: "8px" }}>{t.pair ?? "-"}</td>
-                      <td style={{ border: "1px solid #ccc", padding: "8px" }}>
-                        {t.entry_time
-                          ? new Date(t.entry_time * 1000).toLocaleString()
-                          : "-"}
-                      </td>
-                      <td
-                        style={{
-                          border: "1px solid #ccc",
-                          padding: "8px",
-                          textAlign: "right",
-                        }}
-                      >
-                        {formatProfit(t.profit, t.profit_pips)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div>該当データがありません。</div>
-          )}
+          <TradeTable
+            trades={summary.trades}
+            displayMode={displayMode}
+            onLabelClick={() => {}}
+            renderMemoButton={() => null}
+          />
         </>
       ) : (
         <div>該当データがありません。</div>

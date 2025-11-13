@@ -6,7 +6,8 @@ import "react-calendar/dist/Calendar.css";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
 import { UpdateMemoButton } from "../components/UpdateMemoButton";
 import { formatHoldingTime } from '../utils/time';
-import { Profit } from './format/Profit';
+import { DisplayModeToggle } from "../components/DisplayModeToggle";
+import { TradeTable } from "../components/TradeTable";
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -56,24 +57,11 @@ const CalendarView: React.FC = () => {
 
   return (
     <main className="container mx-auto p-4">
-      <div className="flex space-x-2 mb-2">
-        <button
-          onClick={() => setDisplayMode("円")}
-          className={`px-2 py-1 rounded ${
-            displayMode === "円" ? "bg-blue-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          円
-        </button>
-        <button
-          onClick={() => setDisplayMode("pips")}
-          className={`px-2 py-1 rounded ${
-            displayMode === "pips" ? "bg-blue-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          pips
-        </button>
+
+      <div className="mb-4">
+        <DisplayModeToggle value={displayMode} onChange={setDisplayMode} />
       </div>
+
       <div className="flex space-x-4">
         {/* 左：カレンダー */}
         <div className="flex-shrink-0">
@@ -137,70 +125,14 @@ const CalendarView: React.FC = () => {
           </p>
 
           {/* トレード一覧テーブル */}
-          {tradesForDate.length ? (
-            <div className="mt-2 overflow-x-auto">
-              <table className="min-w-full text-sm table-auto border-collapse">
-                <thead className="bg-gray-100 sticky top-0 z-10">
-                  <tr>
-                    <th className="px-2 py-1 border-b text-center">#</th>
-                    <th className="px-2 py-1 border-b text-center">通貨ペア</th>
-                    <th className="px-2 py-1 border-b text-center">売買</th>
-                    <th className="px-2 py-1 border-b text-right">Lot</th>
-                    <th className="px-2 py-1 border-b text-right">Entry Rate</th>
-                    <th className="px-2 py-1 border-b text-right">Exit Rate</th>
-                    <th className="px-2 py-1 border-b text-right">Entry Time</th>
-                    <th className="px-2 py-1 border-b text-right">Exit Time</th>
-                    <th className="px-2 py-1 border-b text-right">損益</th>
-                    <th className="px-2 py-1 border-b text-center">操作</th>
-                    <th className="px-2 py-1 border-b text-center">操作</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tradesForDate.map((t) => (
-                    <tr
-                      key={t.id}
-                      className="border-b hover:bg-gray-50 transition-colors"
-                    >
-                      <td className="px-2 py-1 text-center">{t.id}</td>
-                      <td className="px-2 py-1 text-center">{t.pair}</td>
-                      <td
-                        className={`px-2 py-1 text-center font-semibold ${
-                          t.side === "買" ? "text-red-600" : "text-blue-600"
-                        }`}
-                      >
-                        {t.side}
-                      </td>
-                      <td className="px-2 py-1 text-right">{t.lot}</td>
-                      <td className="px-2 py-1 text-right">{t.entry_rate}</td>
-                      <td className="px-2 py-1 text-right">{t.exit_rate}</td>
-                      <td className="px-2 py-1 text-right">
-                        {new Date(t.entry_time * 1000).toLocaleTimeString()}
-                      </td>
-                      <td className="px-2 py-1 text-right">
-                        {new Date(t.exit_time * 1000).toLocaleTimeString()}
-                      </td>
-                      <td className={`px-2 py-1 text-right font-semibold}`}>
-                        <Profit profit={displayMode == "円" ? t.profit : t.profit / t.lot / 100} />
-                      </td>
-                      <td className="px-2 py-1 text-center">
-                        <button
-                          onClick={() => handleLabelClick(t)}
-                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors"
-                        >
-                          ラベル登録
-                        </button>
-                      </td>
-                      <td className="px-2 py-1 text-center">
-                        <UpdateMemoButton tradeId={t.id} memoContent={t.memo} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="mt-2 text-gray-500">トレードはありません。</p>
-          )}
+          <TradeTable
+            trades={tradesForDate}
+            displayMode={displayMode}
+            onLabelClick={handleLabelClick}
+            renderMemoButton={(id, memo) => (
+              <UpdateMemoButton tradeId={id} memoContent={memo} />
+            )}
+          />
         </div>
       </div>
 
