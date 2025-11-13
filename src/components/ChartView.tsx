@@ -64,7 +64,6 @@ class DebugPaneView implements IPrimitivePaneView {
                         const entryTimeFloor = Math.floor(trade.entry_time / paneView._primitive.interval()) * paneView._primitive.interval();
                         const exitTimeFloor = Math.floor(trade.exit_time / paneView._primitive.interval()) * paneView._primitive.interval();
 
-
                         const entryX = chart.timeScale().timeToCoordinate((entryTimeFloor + TIME_OFFSET) as Time);
                         const entryY = series.priceToCoordinate(trade.entry_rate);
                         const exitX = chart.timeScale().timeToCoordinate((exitTimeFloor + TIME_OFFSET) as Time);
@@ -159,7 +158,7 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
 
 const ChartView: React.FC<ChartViewProps> = () => {
     const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
-    const candleSeriesRef = useRef<CandlestickSeries<Time> | null>(null);
+    const candleSeriesRef = useRef<InstanceType<typeof CandlestickSeries> | null>(null);
     const primitiveRef = useRef<DebugPrimitive | null>(null);
     const chartContainerRef = useRef<HTMLDivElement>(null);
 
@@ -195,7 +194,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
             chartRef.current = chart;
 
             // ローソク足シリーズ
-            const series = chart.addSeries(CandlestickSeries, {
+            const series = chart.addSeries<typeof CandlestickSeries>(CandlestickSeries, {
                 upColor: "white",
                 borderUpColor: "black",
                 wickUpColor: "black",
@@ -214,7 +213,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
             try {
                 const candles: Candle[] = await invoke("get_candles", { interval });
                 const formatted = candles.map((c) => ({
-                    time: c.time + 3600 * 9 as Time,
+                    time: (c.time + 3600 * 9) as Time,
                     open: c.open,
                     high: c.high,
                     low: c.low,
@@ -224,8 +223,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
 
                 // 初期表示
                 const times = formatted.map((c) => c.time as number);
-                const to = times[times.length - 1];
-                const from = times[Math.max(0, times.length - 100)];
+                const to = times[times.length - 1] as Time;
+                const from = times[Math.max(0, times.length - 100)] as Time;
                 chart.timeScale().setVisibleRange({ from, to });
             } catch (err) {
                 console.error("ローソク足取得失敗:", err);
@@ -280,7 +279,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
         const series = candleSeriesRef.current;
         if (!series) return;
 
-        const data = (series as any)._data as CandlestickData<Time>[]; // 内部データ参照
+        const data = (series as any)._data as CandlestickData<Time>[];
         if (!data || data.length === 0) return;
 
         const closest = data.reduce((prev, curr) =>
@@ -291,8 +290,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
         );
 
         const rangeSize = 50;
-        const from = (closest.time as number) - rangeSize * 60;
-        const to = (closest.time as number) + rangeSize * 60;
+        const from = ((closest.time as number) - rangeSize * 60) as Time;
+        const to = ((closest.time as number) + rangeSize * 60) as Time;
         chartRef.current.timeScale().setVisibleRange({ from, to });
     };
 
@@ -317,6 +316,8 @@ const ChartView: React.FC<ChartViewProps> = () => {
                     <option value={300}>5分足</option>
                     <option value={900}>15分足</option>
                     <option value={3600}>1時間足</option>
+                    <option value={14400}>4時間足</option>
+                    <option value={86400}>日足</option>
                 </select>
 
                 <UpdateOHLCButton />
