@@ -42,11 +42,12 @@ jobs:
           echo "version=$VER" >> $GITHUB_OUTPUT
 
       # ==============================
-      # PR 用ブランチを作成
+      # PR 用ブランチを main から作成
       # ==============================
       - name: Create branch for PR
         shell: bash
         run: |
+          git checkout main
           BRANCH="auto/version-bump-${{ steps.version.outputs.version }}"
           git checkout -b "$BRANCH"
           echo "Created branch $BRANCH"
@@ -73,7 +74,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       # ==============================
-      # 🔧 Update tauri.conf.json
+      # 🔧 Update tauri.conf.json version
       # ==============================
       - name: Update version in tauri.conf.json
         shell: bash
@@ -84,7 +85,7 @@ jobs:
           mv tmp.json src-tauri/tauri.conf.json
 
       # ==============================
-      # ✏ Commit & Create PR
+      # ✏ Commit version bump
       # ==============================
       - name: Commit version bump
         shell: bash
@@ -92,6 +93,9 @@ jobs:
           git add src-tauri/tauri.conf.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
 
+      # ==============================
+      # 📝 Create Pull Request
+      # ==============================
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
@@ -102,7 +106,6 @@ jobs:
           body: "This PR bumps tauri.conf.json version to ${{ steps.version.outputs.version }}"
           base: main
           labels: version-bump
-          skip-if-empty: true  # 差分がない場合は PR を作らない
 
       # ==============================
       # 🔑 Tauri build
