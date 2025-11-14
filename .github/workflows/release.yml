@@ -14,8 +14,22 @@ jobs:
       pull-requests: write
 
     steps:
+      # ==============================
+      # ✔ Clone full history (必須)
+      # ==============================
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ==============================
+      # ✔ CRLF 問題を防止
+      # ==============================
+      - name: Configure git
+        run: |
+          git config --global core.autocrlf false
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
       # ==============================
       # 🔢 Extract version from tag
@@ -49,7 +63,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       # ==============================
-      # 🔧 Update tauri.conf.json version
+      # 🔧 Update tauri.conf.json
       # ==============================
       - name: Update version in tauri.conf.json
         shell: bash
@@ -60,13 +74,11 @@ jobs:
           mv tmp.json src-tauri/tauri.conf.json
 
       # ==============================
-      # 📝 Commit & Create Pull Request
+      # ✏ Commit & Create PR
       # ==============================
       - name: Commit version bump
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src-tauri/tauri.conf.json
           git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
 
@@ -82,7 +94,7 @@ jobs:
           labels: version-bump
 
       # ==============================
-      # 🔑 Tauri ビルド
+      # 🔑 Tauri build
       # ==============================
       - name: Build Tauri App
         env:
@@ -92,7 +104,7 @@ jobs:
         run: pnpm tauri build
 
       # ==============================
-      # 🧾 latest.json 自動生成
+      # 🧾 Generate latest.json
       # ==============================
       - name: Generate latest.json
         shell: bash
@@ -113,7 +125,7 @@ jobs:
           }" > latest.json
 
       # ==============================
-      # 🚀 GitHub Release アップロード
+      # 🚀 Upload release assets
       # ==============================
       - name: Create Release
         uses: softprops/action-gh-release@v2
