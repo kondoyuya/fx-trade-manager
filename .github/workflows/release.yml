@@ -11,29 +11,19 @@ jobs:
 
     permissions:
       contents: write
-      pull-requests: write
 
     steps:
-      # ==============================
-      # ✔ Clone full history (必須)
-      # ==============================
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # ==============================
-      # ✔ CRLF 問題を防止 & git config
-      # ==============================
       - name: Configure git
         run: |
           git config --global core.autocrlf false
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      # ==============================
-      # 🔢 Extract version from tag
-      # ==============================
       - name: Set version from tag
         id: version
         shell: bash
@@ -41,18 +31,6 @@ jobs:
           VER="${GITHUB_REF_NAME#v}"
           echo "version=$VER" >> $GITHUB_OUTPUT
 
-      # ==============================
-      # PR 用ブランチを main から作成
-      # ==============================
-      - name: Create branch for PR
-        shell: bash
-        run: |
-          git checkout main
-          BRANCH="auto/version-bump-${{ steps.version.outputs.version }}"
-          git checkout -b "$BRANCH"
-          echo "Created branch $BRANCH"
-
-      # Node.js + pnpm セットアップ
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -66,50 +44,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Rust セットアップ
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust
         uses: Swatinem/rust-cache@v2
 
-      # ==============================
-      # 🔧 Update tauri.conf.json version
-      # ==============================
       - name: Update version in tauri.conf.json
+        id: update_conf
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          echo "Updating tauri.conf.json version to $VERSION"
           jq --arg version "$VERSION" '.version = $version' src-tauri/tauri.conf.json > tmp.json
-          mv tmp.json src-tauri/tauri.conf.json
+          if ! cmp -s src-tauri/tauri.conf.json tmp.json; then
+            mv tmp.json src-tauri/tauri.conf.json
+            echo "tauri_conf_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "tauri_conf_changed=false" >> $GITHUB_OUTPUT
+            rm tmp.json
+          fi
 
-      # ==============================
-      # ✏ Commit version bump
-      # ==============================
-      - name: Commit version bump
+      - name: Commit and Push version bump
+        if: steps.update_conf.outputs.tauri_conf_changed == 'true'
         shell: bash
         run: |
           git add src-tauri/tauri.conf.json
-          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} (auto-release) [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
 
-      # ==============================
-      # 📝 Create Pull Request
-      # ==============================
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v5
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
-          branch: "auto/version-bump-${{ steps.version.outputs.version }}"
-          title: "chore: bump version to ${{ steps.version.outputs.version }}"
-          body: "This PR bumps tauri.conf.json version to ${{ steps.version.outputs.version }}"
-          base: main
-          labels: version-bump
-
-      # ==============================
-      # 🔑 Tauri build
-      # ==============================
       - name: Build Tauri App
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -117,14 +79,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm tauri build
 
-      # ==============================
-      # 🧾 Generate latest.json
-      # ==============================
       - name: Generate latest.json
         shell: bash
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          SIG_FILE=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip.sig" | head -n 1)
+          SIG_FILE=$(find src-tauri/target/release/bundle -name "*.nsis.zip.sig" -type f | head -n 1)
           SIG=$(cat "$SIG_FILE")
           echo "{
             \"version\": \"$VERSION\",
@@ -138,9 +97,6 @@ jobs:
             }
           }" > latest.json
 
-      # ==============================
-      # 🚀 Upload release assets
-      # ==============================
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
