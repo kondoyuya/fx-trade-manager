@@ -1,24 +1,38 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { TradeSummary } from "../types";
-import { formatHoldingTime, getStartOfMonthString, getTodayString } from "../utils/time";
+import { formatHoldingTime, getStartOfMonthString, getTodayString, parseTimeToSeconds } from "../utils/time";
 import { formatProfit } from './format/Profit';
 import { DisplayModeToggle, DisplayMode } from "../components/DisplayModeToggle";
 import { TradeTable } from "../components/TradeTable";
+import { TradeFilter, TradeFilterValues } from "../components/TradeFilter";
 
 export const TradeList: React.FC = () => {
-  const [startDate, setStartDate] = useState(getStartOfMonthString);
-  const [endDate, setEndDate] = useState(getTodayString);
   const [summary, setSummary] = useState<TradeSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [displayMode, setDisplayMode] = useState<DisplayMode>("円");
+  const [filterValues, setFilterValues] = useState<TradeFilterValues>({
+    startDate: getStartOfMonthString(),
+    endDate: getTodayString(),
+    minHoldingEnabled: false,
+    minHoldingTime: "00:00:00",
+    maxHoldingEnabled: false,
+    maxHoldingTime: "00:00:00",
+  });
 
   const fetchTrades = async () => {
     setLoading(true);
     try {
-      const result = await invoke<TradeSummary>("get_filtered_trades_summary", {
-        filter: { start_date: startDate, end_date: endDate },
-      });
+      const filter: any = {
+        start_date: filterValues.startDate,
+        end_date: filterValues.endDate,
+      };
+      if (filterValues.minHoldingEnabled)
+        filter.min_holding_time = parseTimeToSeconds(filterValues.minHoldingTime);
+      if (filterValues.maxHoldingEnabled)
+        filter.max_holding_time = parseTimeToSeconds(filterValues.maxHoldingTime);
+
+      const result = await invoke<TradeSummary>("get_filtered_trades_summary", { filter });
       setSummary(result);
     } catch (err) {
       console.error(err);
@@ -30,7 +44,7 @@ export const TradeList: React.FC = () => {
 
   useEffect(() => {
     fetchTrades();
-  }, [startDate, endDate]);
+  }, []);
 
   const winRate =
     summary && summary.count > 0
@@ -48,33 +62,12 @@ export const TradeList: React.FC = () => {
         <DisplayModeToggle value={displayMode} onChange={setDisplayMode} />
       </div>
 
-      {/* 日付フィルター */}
-      <div className="flex flex-wrap items-center gap-2 mb-6">
-        <label className="flex items-center gap-2">
-          開始日:
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            className="border px-2 py-1 rounded"
-          />
-        </label>
-        <label className="flex items-center gap-2">
-          終了日:
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            className="border px-2 py-1 rounded"
-          />
-        </label>
-        <button
-          onClick={fetchTrades}
-          className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-        >
-          更新
-        </button>
-      </div>
+      {/* フィルター */}
+      <TradeFilter
+        values={filterValues}
+        onChange={setFilterValues}
+        onApply={fetchTrades}
+      />
 
       {/* 統計カード */}
       {summary ? (
