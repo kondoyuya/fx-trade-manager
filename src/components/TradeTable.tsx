@@ -63,7 +63,7 @@ export const TradeTable: React.FC<TradeTableProps> = ({
               </td>
 
               <td className="px-2 py-1 text-right font-semibold">
-                {formatProfit(displayMode, t.profit, t.profit / t.lot / 100, false)}
+                {formatProfit(displayMode, t.profit, t.profit_pips, false)}
               </td>
 
               <td className="px-2 py-1 text-center">
