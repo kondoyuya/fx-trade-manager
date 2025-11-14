@@ -1,12 +1,6 @@
 export interface DailySummary {
   date: string;
-  profit: number;
-  profit_pips: number;
-  count: number;
-  wins: number;
-  losses: number;
-  total_holding_time: number;
-  trades: Trade[];
+  summary: TradeSummary;
 }
 
 export interface Trade {

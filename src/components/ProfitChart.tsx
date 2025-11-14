@@ -19,7 +19,7 @@ function computeCumulativeProfit(
 
   let cumulative = 0;
   return sorted.map(s => {
-    const profit = displayMode === "円" ? s.profit : s.profit_pips / 10;
+    const profit = displayMode === "円" ? s.summary.profit : s.summary.profit_pips / 10;
     cumulative += profit;
     return {
       date: s.date,

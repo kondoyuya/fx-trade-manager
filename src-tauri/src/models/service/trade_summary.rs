@@ -52,14 +52,14 @@ impl TradeSummary {
 
             total_holding_time += holding_time;
 
-            if t.profit >= 0 {
+            if t.profit > 0 {
                 wins += 1;
                 win_total += t.profit;
                 win_pips_total += t.profit_pips;
                 total_holding_time_wins += holding_time;
                 profit_wins += t.profit as f64;
                 profit_pips_wins += t.profit_pips as f64;
-            } else {
+            } else if t.profit < 0{
                 losses += 1;
                 loss_total += t.profit;
                 loss_pips_total += t.profit_pips;

@@ -5,9 +5,9 @@ import { DailySummary, Trade } from "../types";
 import "react-calendar/dist/Calendar.css";
 import { LabelSelectPopup } from "../components/LabelSelectButton";
 import { UpdateMemoButton } from "../components/UpdateMemoButton";
-import { formatHoldingTime } from '../utils/time';
 import { DisplayModeToggle } from "../components/DisplayModeToggle";
 import { TradeTable } from "../components/TradeTable";
+import { TradeSummaryView } from "../components/TradeSummaryView";
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -43,21 +43,32 @@ const CalendarView: React.FC = () => {
   // 月間利益を計算
   const getMonthlyProfit = (date: Date): number => {
     const year = date.getFullYear();
-    const month = date.getMonth(); // 0-11
+    const month = date.getMonth();
+
     const monthlySummaries = summaries.filter((s) => {
       const sDate = new Date(s.date);
       return sDate.getFullYear() === year && sDate.getMonth() === month;
     });
-    return displayMode === "円"
-    ? monthlySummaries.reduce((sum, s) => sum + (s.profit ?? 0), 0)
-    : monthlySummaries.reduce((sum, s) => sum + (s.profit_pips ?? 0), 0) / 10;
+
+    if (displayMode === "円") {
+      return monthlySummaries.reduce(
+        (sum, s) => sum + (s.summary.profit ?? 0),
+        0
+      );
+    } else {
+      return (
+        monthlySummaries.reduce(
+          (sum, s) => sum + (s.summary.profit_pips ?? 0),
+          0
+        ) / 10
+      );
+    }
   };
 
-  const tradesForDate = getSummaryFromDate(selectedDate)?.trades ?? [];
+  const tradesForDate = getSummaryFromDate(selectedDate)?.summary.trades ?? [];
 
   return (
     <main className="container mx-auto p-4">
-
       <div className="mb-4">
         <DisplayModeToggle value={displayMode} onChange={setDisplayMode} />
       </div>
@@ -70,11 +81,18 @@ const CalendarView: React.FC = () => {
             tileContent={({ date }) => {
               const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000);
               const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, "0")}-${String(jst.getDate()).padStart(2, "0")}`;
-              const summary = summaries.find(s => s.date === dateStr);
+              const summary = summaries.find(s => s.date === dateStr)?.summary;
               if (!summary) return null;
 
-              const profit = displayMode === "円" ? summary.profit : summary.profit_pips / 10;
-              const color = profit > 0 ? "text-blue-600" : profit < 0 ? "text-red-600" : "text-gray-400";
+              const profit =
+                displayMode === "円"
+                  ? summary.profit
+                  : summary.profit_pips / 10;
+
+              const color =
+                profit > 0 ? "text-blue-600" :
+                profit < 0 ? "text-red-600" :
+                "text-gray-400";
 
               return (
                 <p className={`text-xs ${profit !== 0 ? "font-bold" : ""} ${color}`}>
@@ -83,13 +101,19 @@ const CalendarView: React.FC = () => {
               );
             }}
           />
+
           <div className="mt-4 p-2 border rounded bg-gray-50">
             <h3 className="font-bold mb-1">
               {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}月の収支
             </h3>
-            <p className={`font-semibold ${getMonthlyProfit(selectedDate) >= 0 ? "text-blue-600" : "text-red-600"}`}>
-              {(getMonthlyProfit(selectedDate) > 0 ? "+" : "") 
-              + getMonthlyProfit(selectedDate) + displayMode} 
+            <p
+              className={`font-semibold ${
+                getMonthlyProfit(selectedDate) >= 0 ? "text-blue-600" : "text-red-600"
+              }`}
+            >
+              {(getMonthlyProfit(selectedDate) > 0 ? "+" : "") +
+                getMonthlyProfit(selectedDate) +
+                displayMode}
             </p>
           </div>
         </div>
@@ -97,34 +121,12 @@ const CalendarView: React.FC = () => {
         {/* 右：日付詳細 + トレード一覧 */}
         <div className="flex-1 max-h-[600px] overflow-y-auto border rounded p-2">
           <h2 className="font-bold mb-2">{selectedDate.toLocaleDateString()} の詳細</h2>
-          <p>  利益:{" "}
-            {displayMode === "円"
-              ? getSummaryFromDate(selectedDate)?.profit ?? 0
-              : (getSummaryFromDate(selectedDate)?.profit_pips ?? 0) / 10
-            } {displayMode}</p>
-          <p>トレード回数: {getSummaryFromDate(selectedDate)?.count ?? 0}</p>
-          <p>勝ちトレード回数: {getSummaryFromDate(selectedDate)?.wins ?? 0}</p>
-          <p>負けトレード回数: {getSummaryFromDate(selectedDate)?.losses ?? 0}</p>
-          <p>
-            平均保有時間:{" "}
-            {formatHoldingTime(
-              (getSummaryFromDate(selectedDate)?.total_holding_time ?? 0) /
-                (getSummaryFromDate(selectedDate)?.count ?? 1)
-            )}
-          </p>
-          <p>
-            勝率:{" "}
-            {getSummaryFromDate(selectedDate)?.count ?? 0 > 0
-              ? (
-                  ((getSummaryFromDate(selectedDate)?.wins ?? 0) /
-                    (getSummaryFromDate(selectedDate)?.count ?? 1)) *
-                  100
-                ).toFixed(1)
-              : 0}
-            %
-          </p>
 
-          {/* トレード一覧テーブル */}
+          <TradeSummaryView
+            summary={getSummaryFromDate(selectedDate)?.summary ?? null}
+            displayMode={displayMode}
+          />
+
           <TradeTable
             trades={tradesForDate}
             displayMode={displayMode}
