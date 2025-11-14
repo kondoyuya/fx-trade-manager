@@ -71,10 +71,10 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version to ${{ env.VERSION }} [skip ci]"
-          branch: "auto/version-bump-${{ env.VERSION }}"
-          title: "chore: bump version to ${{ env.VERSION }}"
-          body: "This PR bumps tauri.conf.json version to ${{ env.VERSION }}"
+          commit-message: "chore: bump version to $VERSION [skip ci]"
+          branch: "auto/version-bump-${{ github.ref_name }}"
+          title: "chore: bump version to $VERSION"
+          body: "This PR bumps tauri.conf.json version to $VERSION"
           base: main
           labels: version-bump
 
