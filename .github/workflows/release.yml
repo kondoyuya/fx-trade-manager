@@ -23,7 +23,7 @@ jobs:
           fetch-depth: 0
 
       # ==============================
-      # ✔ CRLF 問題を防止
+      # ✔ CRLF 問題を防止 & git config
       # ==============================
       - name: Configure git
         run: |
@@ -40,6 +40,16 @@ jobs:
         run: |
           VER="${GITHUB_REF_NAME#v}"
           echo "version=$VER" >> $GITHUB_OUTPUT
+
+      # ==============================
+      # PR 用ブランチを作成
+      # ==============================
+      - name: Create branch for PR
+        shell: bash
+        run: |
+          BRANCH="auto/version-bump-${{ steps.version.outputs.version }}"
+          git checkout -b "$BRANCH"
+          echo "Created branch $BRANCH"
 
       # Node.js + pnpm セットアップ
       - name: Setup Node.js
@@ -92,6 +102,7 @@ jobs:
           body: "This PR bumps tauri.conf.json version to ${{ steps.version.outputs.version }}"
           base: main
           labels: version-bump
+          skip-if-empty: true  # 差分がない場合は PR を作らない
 
       # ==============================
       # 🔑 Tauri build
