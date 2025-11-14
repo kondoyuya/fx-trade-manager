@@ -5,20 +5,27 @@ on:
     tags:
       - "v*"
 
-env:
-  VERSION: ${{ steps.version.outputs.VERSION }}
-  BRANCH_NAME: auto/version-bump-${{ github.ref_name }}
-
 jobs:
   release:
     runs-on: windows-latest
 
     permissions:
       contents: write
+      pull-requests: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      # ==============================
+      # 🔢 Extract version from tag
+      # ==============================
+      - name: Set version from tag
+        id: version
+        shell: bash
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          echo "version=$VER" >> $GITHUB_OUTPUT
 
       # Node.js + pnpm セットアップ
       - name: Setup Node.js
@@ -42,39 +49,35 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       # ==============================
-      # ✅ tauri.conf.json の version 自動更新
+      # 🔧 Update tauri.conf.json version
       # ==============================
       - name: Update version in tauri.conf.json
         shell: bash
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION="${{ steps.version.outputs.version }}"
           echo "Updating tauri.conf.json version to $VERSION"
           jq --arg version "$VERSION" '.version = $version' src-tauri/tauri.conf.json > tmp.json
           mv tmp.json src-tauri/tauri.conf.json
 
       # ==============================
-      # 📝 Commit version bump and create PR
+      # 📝 Commit & Create Pull Request
       # ==============================
-      - name: Prepare version variable
-        shell: bash
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_ENV
-      
       - name: Commit version bump
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add src-tauri/tauri.conf.json
-          git commit -m "chore: bump version to $VERSION [skip ci]" || echo "No changes to commit"
-      
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]" || echo "No changes to commit"
+
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: bump version to $VERSION [skip ci]"
-          branch: "auto/version-bump-${{ github.ref_name }}"
-          title: "chore: bump version to $VERSION"
-          body: "This PR bumps tauri.conf.json version to $VERSION"
+          commit-message: "chore: bump version to ${{ steps.version.outputs.version }} [skip ci]"
+          branch: "auto/version-bump-${{ steps.version.outputs.version }}"
+          title: "chore: bump version to ${{ steps.version.outputs.version }}"
+          body: "This PR bumps tauri.conf.json version to ${{ steps.version.outputs.version }}"
           base: main
           labels: version-bump
 
@@ -94,9 +97,9 @@ jobs:
       - name: Generate latest.json
         shell: bash
         run: |
-          VERSION=${GITHUB_REF_NAME#v}
+          VERSION="${{ steps.version.outputs.version }}"
           SIG_FILE=$(find src-tauri/target/release/bundle/nsis -name "*.nsis.zip.sig" | head -n 1)
-          SIG=$(cat "$SIG_FILE")  # ← base64 を再度かけない
+          SIG=$(cat "$SIG_FILE")
           echo "{
             \"version\": \"$VERSION\",
             \"notes\": \"Auto generated release.\",
@@ -104,7 +107,7 @@ jobs:
             \"platforms\": {
               \"windows-x86_64\": {
                 \"signature\": \"$SIG\",
-                \"url\": \"https://github.com/${{ github.repository }}/releases/download/${GITHUB_REF_NAME}/fx-trade-manager_${VERSION}_x64-setup.nsis.zip\"
+                \"url\": \"https://github.com/${{ github.repository }}/releases/download/v$VERSION/fx-trade-manager_${VERSION}_x64-setup.nsis.zip\"
               }
             }
           }" > latest.json
