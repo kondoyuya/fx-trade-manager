@@ -1,6 +1,6 @@
-pub mod update_cmd;
-pub mod records_cmd;
 pub mod handlers;
+pub mod records_cmd;
+pub mod update_cmd;
 
 macro_rules! register_commands {
     ($builder:expr) => {

@@ -1,10 +1,10 @@
 use directories::ProjectDirs;
-use std::path::PathBuf;
 use rusqlite::{Connection, Result};
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
-pub mod schema;
 pub mod queries;
+pub mod schema;
 
 pub struct DbState {
     pub conn: Arc<Mutex<Connection>>,

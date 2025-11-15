@@ -1,7 +1,7 @@
+use chrono::Datelike;
+use chrono::NaiveDate;
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use chrono_tz::Asia::Tokyo;
-use chrono::NaiveDate;
-use chrono::Datelike;
 
 /// "YYYY/MM/DD hh:mm:ss"（JST）→ UNIX time（UTC基準
 pub fn jst_str_to_unix(time_str: &str) -> Option<i64> {
@@ -18,7 +18,7 @@ pub fn get_business_date_from_unix(unix: i64) -> chrono::NaiveDate {
     let ny = chrono_tz::America::New_York;
 
     // UNIX秒 (JST基準) → JST日時
-    let naive = chrono::NaiveDateTime::from_timestamp_opt(unix + 3600*7, 0) // NY時間で0時が境界になるように調整
+    let naive = chrono::NaiveDateTime::from_timestamp_opt(unix + 3600 * 7, 0) // NY時間で0時が境界になるように調整
         .unwrap_or_else(|| chrono::NaiveDateTime::from_timestamp(0, 0));
     let jst_dt = jst.from_utc_datetime(&naive);
 
@@ -40,9 +40,11 @@ pub fn get_unix_range_from_business_date(date_str: &str) -> Option<(i64, i64)> {
     let date = NaiveDate::parse_from_str(date_str, "%Y%m%d").ok()?;
 
     // NY時間で当日17:00（＝JST翌朝6時 or 7時）
-    let end_ny = ny.with_ymd_and_hms(date.year(), date.month(), date.day(), 17, 0, 0).single()?;
+    let end_ny = ny
+        .with_ymd_and_hms(date.year(), date.month(), date.day(), 17, 0, 0)
+        .single()?;
     let end_jst = end_ny.with_timezone(&jst);
-    
+
     let end_jst_timestamp = end_jst.timestamp();
     let start_jst_timestamp = end_jst_timestamp - (60 * 60 * 24);
 

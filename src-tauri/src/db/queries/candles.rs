@@ -21,23 +21,24 @@ pub fn get_latest_time(state: &DbState) -> Result<i64, String> {
 
 pub fn insert_candle(state: &DbState, candle: Candle) -> Result<(), String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
-    state.execute(
-        "INSERT OR IGNORE INTO candles (
+    state
+        .execute(
+            "INSERT OR IGNORE INTO candles (
         type, time, open, high, low, close, tickvol, vol, spread
         ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-        params![
-            "JPYUSD",
-            candle.time,
-            candle.open,
-            candle.high,
-            candle.low,
-            candle.close,
-            candle.tickvol,
-            candle.vol,
-            candle.spread
-        ],
-    )
-    .map_err(|e| e.to_string())?;
+            params![
+                "JPYUSD",
+                candle.time,
+                candle.open,
+                candle.high,
+                candle.low,
+                candle.close,
+                candle.tickvol,
+                candle.vol,
+                candle.spread
+            ],
+        )
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -60,15 +61,7 @@ pub fn insert_candles_bulk(state: &DbState, candles: &Vec<Candle>) -> Result<(),
 
         for c in candles {
             stmt.execute(params![
-                c.time,
-                c.open,
-                c.high,
-                c.low,
-                c.close,
-                c.tickvol,
-                c.vol,
-                c.spread,
-                c.pair
+                c.time, c.open, c.high, c.low, c.close, c.tickvol, c.vol, c.spread, c.pair
             ])
             .map_err(|e| e.to_string())?;
         }

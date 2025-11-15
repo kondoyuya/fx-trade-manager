@@ -1,4 +1,4 @@
-use rusqlite::{params, Result, params_from_iter};
+use rusqlite::{params, params_from_iter, Result};
 
 use crate::db::DbState;
 use crate::models::db::trade::Trade;
@@ -100,18 +100,15 @@ pub fn get_trades_by_label(state: &DbState, label_id: i32) -> Result<Vec<Trade>,
 }
 
 pub fn update_trade_memo_by_id(state: &DbState, trade: Trade) -> Result<(), String> {
-
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-        // ベースSQL
+    // ベースSQL
     let mut sql = String::from(
         "UPDATE trades SET 
         memo = ?1",
     );
 
-    let mut params: Vec<&dyn rusqlite::ToSql> = vec![
-        &trade.memo,
-    ];
+    let mut params: Vec<&dyn rusqlite::ToSql> = vec![&trade.memo];
 
     // WHERE 句を追加
     sql.push_str(" WHERE id = ?");
@@ -132,7 +129,9 @@ pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>,
 
     if let Some(start_str) = &filter.start_date {
         let start_yyyymmdd = start_str.replace("-", "");
-        if let Some((start_unix, _)) = time_utils::get_unix_range_from_business_date(&start_yyyymmdd) {
+        if let Some((start_unix, _)) =
+            time_utils::get_unix_range_from_business_date(&start_yyyymmdd)
+        {
             query.push_str(" AND exit_time >= ?");
             params_vec.push(Box::new(start_unix));
         }

@@ -1,12 +1,12 @@
-use std::{
-    path::PathBuf,
-    process::{Command, Child, Stdio},
-    fs,
-};
-use crate::service::meta;
 use crate::db::DbState;
-use tauri::{ generate_context, Context };
+use crate::service::meta;
+use std::{
+    fs,
+    path::PathBuf,
+    process::{Child, Command, Stdio},
+};
 use tauri;
+use tauri::{generate_context, Context};
 
 #[cfg(windows)]
 use std::os::windows::process::CommandExt;
@@ -15,16 +15,16 @@ fn get_mt5_dir() -> PathBuf {
     let exe_dir = {
         #[cfg(debug_assertions)]
         {
-            PathBuf::from(
-                std::env::var("CARGO_MANIFEST_DIR")
-                    .expect("CARGO_MANIFEST_DIR not set")
-            )
+            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"))
         }
 
         #[cfg(not(debug_assertions))]
         {
             let exe_path = std::env::current_exe().expect("Failed to get exe path");
-            exe_path.parent().expect("Failed to get exe dir").to_path_buf()
+            exe_path
+                .parent()
+                .expect("Failed to get exe dir")
+                .to_path_buf()
         }
     };
 
@@ -33,7 +33,6 @@ fn get_mt5_dir() -> PathBuf {
 
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
 pub fn start_python_server(db: &DbState) -> Result<Child, String> {
-
     // 最後にセットアップされたバージョンを取得
     let context: tauri::Context<tauri::Wry> = generate_context!();
     let current_version: Option<String> = context.config().version.clone();
@@ -58,7 +57,10 @@ pub fn start_python_server(db: &DbState) -> Result<Child, String> {
             return Err(format!("mt5_server.py not found: {:?}", server_path));
         }
         if !requirements_path.exists() {
-            return Err(format!("requirements.txt not found: {:?}", requirements_path));
+            return Err(format!(
+                "requirements.txt not found: {:?}",
+                requirements_path
+            ));
         }
 
         if !venv_path.exists() {
@@ -74,7 +76,7 @@ pub fn start_python_server(db: &DbState) -> Result<Child, String> {
             }
         }
 
-        println!("Installing Python dependencies...");        
+        println!("Installing Python dependencies...");
         let status = Command::new(&python_exe)
             .args(&["-m", "ensurepip", "--upgrade"])
             .status()

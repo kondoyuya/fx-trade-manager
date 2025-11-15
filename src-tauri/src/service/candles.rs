@@ -1,6 +1,6 @@
-use rusqlite::Result;
 use crate::db::DbState;
 use crate::models::db::candle::Candle;
+use rusqlite::Result;
 use std::collections::BTreeMap;
 
 pub fn fetch_candles(db: &DbState, interval: i64) -> Result<Vec<Candle>, String> {

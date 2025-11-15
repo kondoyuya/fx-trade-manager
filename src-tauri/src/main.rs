@@ -3,21 +3,21 @@
     windows_subsystem = "windows"
 )]
 
-mod service;
 mod commands;
 mod db;
-mod utils;
 mod models;
 mod mt5_client;
 mod python_server;
+mod service;
+mod utils;
 
 use crate::db::DbState;
-use tauri::{Builder, generate_handler, RunEvent, WindowEvent};
-use tauri_plugin_updater::UpdaterExt;
-use std::process::{Command, Child};
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use python_server::start_python_server;
+use std::path::PathBuf;
+use std::process::{Child, Command};
+use std::sync::{Arc, Mutex};
+use tauri::{generate_handler, Builder, RunEvent, WindowEvent};
+use tauri_plugin_updater::UpdaterExt;
 
 #[tauri::command]
 fn quit_app() {
@@ -34,7 +34,7 @@ fn main() {
             None
         }
     };
-    
+
     let python_server_clone = python_server.clone();
 
     let app = tauri::Builder::default()
@@ -69,4 +69,3 @@ fn main() {
     app.run(tauri::generate_context!())
         .expect("failed to run app");
 }
-

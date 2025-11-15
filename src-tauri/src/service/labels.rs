@@ -1,5 +1,5 @@
+use crate::db::queries::{trade_label, trades};
 use crate::db::DbState;
-use crate::db::queries::{ trades, trade_label };
 use crate::models::db::label::Label;
 use crate::models::service::label_summary::LabelSummary;
 
@@ -45,7 +45,6 @@ pub fn fetch_all_labels(state: &DbState) -> Result<Vec<Label>, String> {
     }
     Ok(labels)
 }
-
 
 pub fn fetch_all_label_with_trade(state: &DbState) -> Result<Vec<LabelSummary>, String> {
     let label_rows: Vec<(i32, String)> = {

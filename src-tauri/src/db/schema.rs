@@ -13,7 +13,6 @@ pub const TABLES: &[&str] = &[
         UNIQUE(pair, side, trade_type, lot , rate, profit, swap, order_time)
     )
     "#,
-
     r#"
     CREATE UNIQUE INDEX IF NOT EXISTS idx_records_unique
         ON records(
@@ -27,7 +26,6 @@ pub const TABLES: &[&str] = &[
         order_time
     )
     "#,
-
     r#"
     CREATE TABLE IF NOT EXISTS candles(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +41,6 @@ pub const TABLES: &[&str] = &[
         UNIQUE(pair, time)
     )
     "#,
-
     // 注文・決済のペアで管理する
     r#"
     CREATE TABLE IF NOT EXISTS trades(
@@ -62,7 +59,6 @@ pub const TABLES: &[&str] = &[
         UNIQUE(pair, side, lot , entry_time, exit_time, entry_rate, exit_rate, profit, profit_pips, swap)
     )
     "#,
-
     r#"
     CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_unique
         ON trades(
@@ -75,14 +71,12 @@ pub const TABLES: &[&str] = &[
         COALESCE(swap, 0)
     )
     "#,
-
     r#"
     CREATE TABLE IF NOT EXISTS labels(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL
     )
     "#,
-
     r#"
     CREATE TABLE IF NOT EXISTS trade_labels(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -90,7 +84,6 @@ pub const TABLES: &[&str] = &[
         label_id INTEGER NOT NULL
     )
     "#,
-
     r#"
     CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY,

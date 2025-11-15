@@ -1,13 +1,13 @@
 use crate::db::DbState;
-use tauri::State;
-use crate::models::db::record::Record;
 use crate::models::db::candle::Candle;
-use crate::models::db::trade::Trade;
 use crate::models::db::label::Label;
+use crate::models::db::record::Record;
+use crate::models::db::trade::Trade;
+use crate::models::filter::trade_filter::TradeFilter;
 use crate::models::service::daily_summary::DailySummary;
 use crate::models::service::label_summary::LabelSummary;
 use crate::models::service::trade_summary::TradeSummary;
-use crate::models::filter::trade_filter::TradeFilter;
+use tauri::State;
 
 #[tauri::command]
 pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
@@ -58,7 +58,11 @@ pub fn add_trade_label(state: State<DbState>, trade_id: i32, label_id: i32) -> R
 }
 
 #[tauri::command]
-pub fn delete_trade_label(state: State<DbState>, trade_id: i32, label_id: i32) -> Result<(), String> {
+pub fn delete_trade_label(
+    state: State<DbState>,
+    trade_id: i32,
+    label_id: i32,
+) -> Result<(), String> {
     let db = &*state;
     crate::service::labels::delete_trade_label(db, trade_id, label_id)
 }
@@ -82,7 +86,11 @@ pub fn get_all_labels_with_trade(state: State<DbState>) -> Result<Vec<LabelSumma
 }
 
 #[tauri::command]
-pub fn update_memo(state: State<DbState>, id: Option<i32>, memo_content: String) -> Result<(), String> {
+pub fn update_memo(
+    state: State<DbState>,
+    id: Option<i32>,
+    memo_content: String,
+) -> Result<(), String> {
     let db = &*state;
     let trade = Trade {
         id: id,
@@ -93,7 +101,10 @@ pub fn update_memo(state: State<DbState>, id: Option<i32>, memo_content: String)
 }
 
 #[tauri::command]
-pub fn get_filtered_trades_summary(state: State<DbState>, filter: TradeFilter) -> Result<TradeSummary, String> {
+pub fn get_filtered_trades_summary(
+    state: State<DbState>,
+    filter: TradeFilter,
+) -> Result<TradeSummary, String> {
     let db = &*state;
     crate::service::trades::get_filtered_trades_summary(db, filter)
 }

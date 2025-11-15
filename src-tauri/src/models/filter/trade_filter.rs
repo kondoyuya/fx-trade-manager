@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use chrono::NaiveDate;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct TradeFilter {
