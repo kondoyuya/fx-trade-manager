@@ -1,26 +1,26 @@
-import { useState } from "react";
-import { useAddLabel } from "../hooks/useAddLabel";
+import { useState } from 'react'
+import { useAddLabel } from '../hooks/useAddLabel'
 
 interface AddLabelButtonProps {
-  onAdded?: (labelName: string) => void; // 登録後に親へ通知
-  buttonLabel?: string;                  // ボタンの文言をカスタマイズ
+  onAdded?: (labelName: string) => void // 登録後に親へ通知
+  buttonLabel?: string // ボタンの文言をカスタマイズ
 }
 
 export const AddLabelButton: React.FC<AddLabelButtonProps> = ({
   onAdded,
-  buttonLabel = "＋ ラベル追加",
+  buttonLabel = '＋ ラベル追加',
 }) => {
-  const [showPopup, setShowPopup] = useState(false);
-  const [newLabelName, setNewLabelName] = useState("");
+  const [showPopup, setShowPopup] = useState(false)
+  const [newLabelName, setNewLabelName] = useState('')
 
-  const { addLabel, loading, error, setError } = useAddLabel();
+  const { addLabel, loading, error, setError } = useAddLabel()
 
   async function handleAddLabel() {
-    const success = await addLabel(newLabelName);
+    const success = await addLabel(newLabelName)
     if (success) {
-      onAdded?.(newLabelName);
-      setNewLabelName("");
-      setShowPopup(false);
+      onAdded?.(newLabelName)
+      setNewLabelName('')
+      setShowPopup(false)
     }
   }
 
@@ -28,8 +28,8 @@ export const AddLabelButton: React.FC<AddLabelButtonProps> = ({
     <>
       <button
         onClick={() => {
-          setError(null);
-          setShowPopup(true);
+          setError(null)
+          setShowPopup(true)
         }}
         className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
       >
@@ -65,12 +65,12 @@ export const AddLabelButton: React.FC<AddLabelButtonProps> = ({
                 className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? "登録中..." : "登録"}
+                {loading ? '登録中...' : '登録'}
               </button>
             </div>
           </div>
         </div>
       )}
     </>
-  );
-};
+  )
+}

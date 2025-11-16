@@ -1,26 +1,30 @@
-import { useState } from "react";
-import { useUpdateMemo } from "../hooks/useUpdateMemo";
+import { useState } from 'react'
+import { useUpdateMemo } from '../hooks/useUpdateMemo'
 
 interface UpdateMemoButtonProps {
-  tradeId?: number;                    // トレードID
-  memoContent?: string;               // メモ内容の現状値
-  buttonLabel?: string;                  // ボタンの文言をカスタマイズ
+  tradeId?: number // トレードID
+  memoContent?: string // メモ内容の現状値
+  buttonLabel?: string // ボタンの文言をカスタマイズ
 }
 
-export const UpdateMemoButton: React.FC<UpdateMemoButtonProps> = ({ tradeId, memoContent = "", buttonLabel = "＋ メモ編集", }) => {
-  const [showPopup, setShowPopup] = useState(false);
-  const [updateMemoContent, setUpdateMemoContent] = useState(memoContent);
+export const UpdateMemoButton: React.FC<UpdateMemoButtonProps> = ({
+  tradeId,
+  memoContent = '',
+  buttonLabel = '＋ メモ編集',
+}) => {
+  const [showPopup, setShowPopup] = useState(false)
+  const [updateMemoContent, setUpdateMemoContent] = useState(memoContent)
 
-  const { updateMemo, loading, error, setError } = useUpdateMemo();
+  const { updateMemo, loading, error, setError } = useUpdateMemo()
 
   // tradeId がない場合は何もしない
-  if (!tradeId) return null;
+  if (!tradeId) return null
 
   async function handleUpdateMemo() {
-    const success = await updateMemo(tradeId!, updateMemoContent);
+    const success = await updateMemo(tradeId!, updateMemoContent)
     if (success) {
-      setUpdateMemoContent(updateMemoContent);
-      setShowPopup(false);
+      setUpdateMemoContent(updateMemoContent)
+      setShowPopup(false)
     }
   }
 
@@ -28,8 +32,8 @@ export const UpdateMemoButton: React.FC<UpdateMemoButtonProps> = ({ tradeId, mem
     <>
       <button
         onClick={() => {
-          setError(null);
-          setShowPopup(true);
+          setError(null)
+          setShowPopup(true)
         }}
         className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
       >
@@ -39,7 +43,9 @@ export const UpdateMemoButton: React.FC<UpdateMemoButtonProps> = ({ tradeId, mem
       {showPopup && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg p-6 w-80">
-            <label htmlFor="memo-content" className="text-lg font-bold mb-4">メモを編集</label>
+            <label htmlFor="memo-content" className="text-lg font-bold mb-4">
+              メモを編集
+            </label>
             <textarea
               id="memo-content"
               value={updateMemoContent}
@@ -64,12 +70,12 @@ export const UpdateMemoButton: React.FC<UpdateMemoButtonProps> = ({ tradeId, mem
                 className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? "登録中..." : "登録"}
+                {loading ? '登録中...' : '登録'}
               </button>
             </div>
           </div>
         </div>
       )}
     </>
-  );
-};
+  )
+}

@@ -1,26 +1,30 @@
-import React, { useState } from "react";
+import React, { useState } from 'react'
 
 export interface TradeFilterValues {
-  startDate: string;
-  endDate: string;
-  minHoldingEnabled: boolean;
-  minHoldingTime: string;
-  maxHoldingEnabled: boolean;
-  maxHoldingTime: string;
+  startDate: string
+  endDate: string
+  minHoldingEnabled: boolean
+  minHoldingTime: string
+  maxHoldingEnabled: boolean
+  maxHoldingTime: string
 }
 
 interface TradeFilterProps {
-  values: TradeFilterValues;
-  onChange: (values: TradeFilterValues) => void;
-  onApply: () => void;
+  values: TradeFilterValues
+  onChange: (values: TradeFilterValues) => void
+  onApply: () => void
 }
 
-export const TradeFilter: React.FC<TradeFilterProps> = ({ values, onChange, onApply }) => {
-  const [expanded, setExpanded] = useState(true);
+export const TradeFilter: React.FC<TradeFilterProps> = ({
+  values,
+  onChange,
+  onApply,
+}) => {
+  const [expanded, setExpanded] = useState(true)
 
   const update = (field: Partial<TradeFilterValues>) => {
-    onChange({ ...values, ...field });
-  };
+    onChange({ ...values, ...field })
+  }
 
   return (
     <div className="border rounded-lg bg-gray-50 mb-4">
@@ -29,7 +33,7 @@ export const TradeFilter: React.FC<TradeFilterProps> = ({ values, onChange, onAp
         onClick={() => setExpanded(!expanded)}
       >
         <span className="font-semibold text-lg">フィルター</span>
-        <span className="text-gray-500">{expanded ? "▲" : "▼"}</span>
+        <span className="text-gray-500">{expanded ? '▲' : '▼'}</span>
       </div>
 
       {expanded && (
@@ -70,7 +74,9 @@ export const TradeFilter: React.FC<TradeFilterProps> = ({ values, onChange, onAp
               <input
                 type="checkbox"
                 checked={values.minHoldingEnabled}
-                onChange={(e) => update({ minHoldingEnabled: e.target.checked })}
+                onChange={(e) =>
+                  update({ minHoldingEnabled: e.target.checked })
+                }
               />
               最小保有時間:
               <input
@@ -87,7 +93,9 @@ export const TradeFilter: React.FC<TradeFilterProps> = ({ values, onChange, onAp
               <input
                 type="checkbox"
                 checked={values.maxHoldingEnabled}
-                onChange={(e) => update({ maxHoldingEnabled: e.target.checked })}
+                onChange={(e) =>
+                  update({ maxHoldingEnabled: e.target.checked })
+                }
               />
               最大保有時間:
               <input
@@ -103,5 +111,5 @@ export const TradeFilter: React.FC<TradeFilterProps> = ({ values, onChange, onAp
         </div>
       )}
     </div>
-  );
-};
+  )
+}

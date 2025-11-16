@@ -1,13 +1,16 @@
-import React from "react";
-import { Trade } from "../types";
-import { formatProfit } from "./format/Profit";
+import React from 'react'
+import { Trade } from '../types'
+import { formatProfit } from './format/Profit'
 
 type TradeTableProps = {
-  trades: Trade[];
-  displayMode: "円" | "pips";
-  onLabelClick: (trade: Trade) => void;
-  renderMemoButton: (tradeId: number, memoContent: string | null) => React.ReactNode;
-};
+  trades: Trade[]
+  displayMode: '円' | 'pips'
+  onLabelClick: (trade: Trade) => void
+  renderMemoButton: (
+    tradeId: number,
+    memoContent: string | null,
+  ) => React.ReactNode
+}
 
 export const TradeTable: React.FC<TradeTableProps> = ({
   trades,
@@ -16,7 +19,7 @@ export const TradeTable: React.FC<TradeTableProps> = ({
   renderMemoButton,
 }) => {
   if (!trades.length) {
-    return <p className="mt-2 text-gray-500">トレードはありません。</p>;
+    return <p className="mt-2 text-gray-500">トレードはありません。</p>
   }
 
   return (
@@ -40,12 +43,15 @@ export const TradeTable: React.FC<TradeTableProps> = ({
 
         <tbody>
           {trades.map((t) => (
-            <tr key={t.id} className="border-b hover:bg-gray-50 transition-colors">
+            <tr
+              key={t.id}
+              className="border-b hover:bg-gray-50 transition-colors"
+            >
               <td className="px-2 py-1 text-center">{t.id}</td>
               <td className="px-2 py-1 text-center">{t.pair}</td>
               <td
                 className={`px-2 py-1 text-center font-semibold ${
-                  t.side === "買" ? "text-red-600" : "text-blue-600"
+                  t.side === '買' ? 'text-red-600' : 'text-blue-600'
                 }`}
               >
                 {t.side}
@@ -83,5 +89,5 @@ export const TradeTable: React.FC<TradeTableProps> = ({
         </tbody>
       </table>
     </div>
-  );
-};
+  )
+}

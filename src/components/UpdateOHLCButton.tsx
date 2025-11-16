@@ -1,25 +1,25 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from '@tauri-apps/api/core'
 
 export const UpdateOHLCButton = () => {
   const handleClick = async () => {
     try {
-      await invoke<string>("fetch_and_update_ohlc");
-      alert("更新に成功しました");
+      await invoke<string>('fetch_and_update_ohlc')
+      alert('更新に成功しました')
     } catch (err) {
-      console.error(err);
+      console.error(err)
 
-      let msg = "不明なエラー";
+      let msg = '不明なエラー'
       if (err instanceof Error) {
-        msg = err.message;
-      } else if (typeof err === "string") {
-        msg = err;
+        msg = err.message
+      } else if (typeof err === 'string') {
+        msg = err
       } else {
-        msg = JSON.stringify(err);
+        msg = JSON.stringify(err)
       }
 
-      alert("DB更新に失敗しました: " + msg);
+      alert('DB更新に失敗しました: ' + msg)
     }
-  };
+  }
 
   return (
     <button
@@ -42,5 +42,5 @@ export const UpdateOHLCButton = () => {
     >
       最新のチャートを取得
     </button>
-  );
-};
+  )
+}

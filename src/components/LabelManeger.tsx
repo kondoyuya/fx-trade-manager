@@ -1,58 +1,58 @@
-import { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { AddLabelButton } from "../components/AddLabelButton";
+import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { AddLabelButton } from '../components/AddLabelButton'
 
 interface Trade {
-  id: number;
-  pair: string;
-  side: string;
-  lot: number;
-  entry_rate: number;
-  exit_rate: number;
-  entry_time: number;
-  exit_time: number;
-  profit: number;
-  swap: number;
-  memo: string;
+  id: number
+  pair: string
+  side: string
+  lot: number
+  entry_rate: number
+  exit_rate: number
+  entry_time: number
+  exit_time: number
+  profit: number
+  swap: number
+  memo: string
 }
 
 interface LabelSummary {
-  id: number;
-  name: string;
-  profit: number;
-  profit_pips: number;
-  count: number;
-  wins: number;
-  losses: number;
-  total_holding_time: number;
-  trades: Trade[];
+  id: number
+  name: string
+  profit: number
+  profit_pips: number
+  count: number
+  wins: number
+  losses: number
+  total_holding_time: number
+  trades: Trade[]
 }
 
 const LabelManager: React.FC = () => {
-  const [labels, setLabels] = useState<LabelSummary[]>([]);
-  const [selectedLabel, setSelectedLabel] = useState<LabelSummary | null>(null);
-  const [displayMode, setDisplayMode] = useState<"円" | "pips">("円");
+  const [labels, setLabels] = useState<LabelSummary[]>([])
+  const [selectedLabel, setSelectedLabel] = useState<LabelSummary | null>(null)
+  const [displayMode, setDisplayMode] = useState<'円' | 'pips'>('円')
 
   useEffect(() => {
     async function fetchLabels() {
       try {
-        const data = await invoke<LabelSummary[]>("get_all_labels_with_trade");
-        console.log("📄 Labels fetched:", data);
-        setLabels(data);
+        const data = await invoke<LabelSummary[]>('get_all_labels_with_trade')
+        console.log('📄 Labels fetched:', data)
+        setLabels(data)
       } catch (error) {
-        console.error("❌ Failed to fetch labels:", error);
+        console.error('❌ Failed to fetch labels:', error)
       }
     }
 
-    fetchLabels();
-  }, []);
+    fetchLabels()
+  }, [])
 
   const formatHoldingTime = (seconds: number): string => {
-    const rounded = Math.round(seconds); // 小数点四捨五入
-    const min = Math.floor(rounded / 60);
-    const sec = rounded % 60;
-    return `${min}分${sec}秒`;
-  };
+    const rounded = Math.round(seconds) // 小数点四捨五入
+    const min = Math.floor(rounded / 60)
+    const sec = rounded % 60
+    return `${min}分${sec}秒`
+  }
 
   return (
     <div className="p-4 space-y-4">
@@ -60,8 +60,20 @@ const LabelManager: React.FC = () => {
       <div className="flex justify-between items-center mb-3">
         <AddLabelButton
           onAdded={(name) => {
-            setLabels((prev) => [...prev, { 
-              id: Date.now(), name, profit: 0, profit_pips: 0, count: 0, wins: 0, losses: 0, total_holding_time: 0,trades: [] }]);
+            setLabels((prev) => [
+              ...prev,
+              {
+                id: Date.now(),
+                name,
+                profit: 0,
+                profit_pips: 0,
+                count: 0,
+                wins: 0,
+                losses: 0,
+                total_holding_time: 0,
+                trades: [],
+              },
+            ])
           }}
         />
       </div>
@@ -74,8 +86,8 @@ const LabelManager: React.FC = () => {
             className={`px-3 py-1 rounded-full cursor-pointer text-sm shadow-sm transition 
               ${
                 selectedLabel?.id === label.id
-                  ? "bg-blue-400 text-white"
-                  : "bg-gray-100 hover:bg-blue-100"
+                  ? 'bg-blue-400 text-white'
+                  : 'bg-gray-100 hover:bg-blue-100'
               }`}
             onClick={() =>
               setSelectedLabel(selectedLabel?.id === label.id ? null : label)
@@ -88,17 +100,17 @@ const LabelManager: React.FC = () => {
 
       <div className="flex space-x-2 mb-2">
         <button
-          onClick={() => setDisplayMode("円")}
+          onClick={() => setDisplayMode('円')}
           className={`px-2 py-1 rounded ${
-            displayMode === "円" ? "bg-blue-500 text-white" : "bg-gray-200"
+            displayMode === '円' ? 'bg-blue-500 text-white' : 'bg-gray-200'
           }`}
         >
           円
         </button>
         <button
-          onClick={() => setDisplayMode("pips")}
+          onClick={() => setDisplayMode('pips')}
           className={`px-2 py-1 rounded ${
-            displayMode === "pips" ? "bg-blue-500 text-white" : "bg-gray-200"
+            displayMode === 'pips' ? 'bg-blue-500 text-white' : 'bg-gray-200'
           }`}
         >
           pips
@@ -116,15 +128,15 @@ const LabelManager: React.FC = () => {
             <table className="min-w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-gray-200 text-gray-700">
-                    <th className="px-2 py-1 border-b text-center">#</th>
-                    <th className="px-2 py-1 border-b text-center">通貨ペア</th>
-                    <th className="px-2 py-1 border-b text-center">売買</th>
-                    <th className="px-2 py-1 border-b text-right">Lot</th>
-                    <th className="px-2 py-1 border-b text-right">Entry Rate</th>
-                    <th className="px-2 py-1 border-b text-right">Exit Rate</th>
-                    <th className="px-2 py-1 border-b text-right">Entry Time</th>
-                    <th className="px-2 py-1 border-b text-right">Exit Time</th>
-                    <th className="px-2 py-1 border-b text-right">損益</th>
+                  <th className="px-2 py-1 border-b text-center">#</th>
+                  <th className="px-2 py-1 border-b text-center">通貨ペア</th>
+                  <th className="px-2 py-1 border-b text-center">売買</th>
+                  <th className="px-2 py-1 border-b text-right">Lot</th>
+                  <th className="px-2 py-1 border-b text-right">Entry Rate</th>
+                  <th className="px-2 py-1 border-b text-right">Exit Rate</th>
+                  <th className="px-2 py-1 border-b text-right">Entry Time</th>
+                  <th className="px-2 py-1 border-b text-right">Exit Time</th>
+                  <th className="px-2 py-1 border-b text-right">損益</th>
                 </tr>
               </thead>
               <tbody>
@@ -137,7 +149,7 @@ const LabelManager: React.FC = () => {
                     <td className="px-2 py-1 text-center">{t.pair}</td>
                     <td
                       className={`px-2 py-1 text-center font-semibold ${
-                        t.side === "買" ? "text-red-600" : "text-blue-600"
+                        t.side === '買' ? 'text-red-600' : 'text-blue-600'
                       }`}
                     >
                       {t.side}
@@ -153,14 +165,13 @@ const LabelManager: React.FC = () => {
                     </td>
                     <td
                       className={`px-2 py-1 text-right font-semibold ${
-                        t.profit >= 0 ? "text-blue-600" : "text-red-600"
+                        t.profit >= 0 ? 'text-blue-600' : 'text-red-600'
                       }`}
                     >
-                      {(t.profit > 0 ? "+" : "") +
-                      (displayMode == "円" 
-                        ? t.profit.toFixed(0)
-                        : (t.profit / t.lot / 100).toFixed(1))
-                      }
+                      {(t.profit > 0 ? '+' : '') +
+                        (displayMode == '円'
+                          ? t.profit.toFixed(0)
+                          : (t.profit / t.lot / 100).toFixed(1))}
                     </td>
                   </tr>
                 ))}
@@ -172,34 +183,36 @@ const LabelManager: React.FC = () => {
         </div>
       )}
 
-          <p>  利益:{" "}
-            {displayMode === "円"
-              ? selectedLabel?.profit ?? 0
-              : (selectedLabel?.profit_pips ?? 0) / 10
-            } {displayMode}</p>
-          <p>トレード回数: {selectedLabel?.count ?? 0}</p>
-          <p>勝ちトレード回数: {selectedLabel?.wins ?? 0}</p>
-          <p>負けトレード回数: {selectedLabel?.losses ?? 0}</p>
-          <p>
-            平均保有時間:{" "}
-            {formatHoldingTime(
-              (selectedLabel?.total_holding_time ?? 0) /
-                (selectedLabel?.count ?? 1)
-            )}
-          </p>
-          <p>
-            勝率:{" "}
-            {selectedLabel?.count ?? 0 > 0
-              ? (
-                  ((selectedLabel?.wins ?? 0) /
-                    (selectedLabel?.count ?? 1)) *
-                  100
-                ).toFixed(1)
-              : 0}
-            %
-          </p>
+      <p>
+        {' '}
+        利益:{' '}
+        {displayMode === '円'
+          ? (selectedLabel?.profit ?? 0)
+          : (selectedLabel?.profit_pips ?? 0) / 10}{' '}
+        {displayMode}
+      </p>
+      <p>トレード回数: {selectedLabel?.count ?? 0}</p>
+      <p>勝ちトレード回数: {selectedLabel?.wins ?? 0}</p>
+      <p>負けトレード回数: {selectedLabel?.losses ?? 0}</p>
+      <p>
+        平均保有時間:{' '}
+        {formatHoldingTime(
+          (selectedLabel?.total_holding_time ?? 0) /
+            (selectedLabel?.count ?? 1),
+        )}
+      </p>
+      <p>
+        勝率:{' '}
+        {(selectedLabel?.count ?? 0 > 0)
+          ? (
+              ((selectedLabel?.wins ?? 0) / (selectedLabel?.count ?? 1)) *
+              100
+            ).toFixed(1)
+          : 0}
+        %
+      </p>
     </div>
-  );
-};
+  )
+}
 
-export default LabelManager;
+export default LabelManager

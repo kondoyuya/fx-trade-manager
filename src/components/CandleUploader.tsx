@@ -1,31 +1,30 @@
-import { useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
+import { useState } from 'react'
+import { open } from '@tauri-apps/plugin-dialog'
+import { invoke } from '@tauri-apps/api/core'
 
 interface CandleUploaderProps {}
 
 const CandleUploader: React.FC<CandleUploaderProps> = () => {
+  const [fileContent, setStatus] = useState<string>('')
 
-  const [fileContent, setStatus] = useState<string>("");
-  
   const handleFileOpen = async () => {
     const selected = await open({
       multiple: false,
-      filters: [{ name: "CSV", extensions: ["csv"] }],
-    });
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    })
 
-    if (typeof selected === "string") {
-      setStatus("Importing CSV...");
+    if (typeof selected === 'string') {
+      setStatus('Importing CSV...')
 
       try {
-        await invoke("insert_candle", { csvPath: selected });
-        setStatus("CSV imported successfully!");
+        await invoke('insert_candle', { csvPath: selected })
+        setStatus('CSV imported successfully!')
       } catch (e) {
-        console.error(e);
-        setStatus(`Failed to import CSV: ${JSON.stringify(e)}`);
+        console.error(e)
+        setStatus(`Failed to import CSV: ${JSON.stringify(e)}`)
       }
     }
-  };
+  }
 
   return (
     <main className="container mx-auto p-4">
@@ -51,17 +50,18 @@ const CandleUploader: React.FC<CandleUploaderProps> = () => {
           UTF-8に変換してアップロードしてください。
         </p>
 
-
         {/* ファイル内容 */}
         {fileContent && (
           <div className="w-full max-w-2xl bg-gray-50 p-4 rounded-lg shadow-inner">
             <h3 className="text-lg font-semibold mb-2">File Content:</h3>
-            <pre className="whitespace-pre-wrap text-sm text-gray-800">{fileContent}</pre>
+            <pre className="whitespace-pre-wrap text-sm text-gray-800">
+              {fileContent}
+            </pre>
           </div>
         )}
       </div>
     </main>
-  );
+  )
 }
 
-export default CandleUploader;
+export default CandleUploader

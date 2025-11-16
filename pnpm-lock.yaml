@@ -63,6 +63,9 @@ importers:
       postcss:
         specifier: ^8.5.6
         version: 8.5.6
+      prettier:
+        specifier: ^3.6.2
+        version: 3.6.2
       tailwindcss:
         specifier: ^4.1.16
         version: 4.1.17
@@ -987,6 +990,11 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  prettier@3.6.2:
+    resolution: {integrity: sha512-I7AIg5boAr5R0FFtJ6rCfD+LFsWHp81dolrFD8S79U9tb8Az2nGrJncnMSnys+bpQJfRUzqs9hnA81OAA3hCuQ==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   react-calendar@6.0.0:
     resolution: {integrity: sha512-6wqaki3Us0DNDjZDr0DYIzhSFprNoy4FdPT9Pjy5aD2hJJVjtJwmdMT9VmrTUo949nlk35BOxehThxX62RkuRQ==}
     peerDependencies:
@@ -1883,6 +1891,8 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  prettier@3.6.2: {}
 
   react-calendar@6.0.0(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:

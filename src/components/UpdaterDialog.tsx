@@ -1,38 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { useUpdater } from '../hooks/useUpdater';
+import React, { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { useUpdater } from '../hooks/useUpdater'
 
 export const UpdaterDialog: React.FC = () => {
-  const { updateInfo, checkForUpdates } = useUpdater();
-  const [isVisible, setIsVisible] = useState(true); // ダイアログの表示状態
+  const { updateInfo, checkForUpdates } = useUpdater()
+  const [isVisible, setIsVisible] = useState(true) // ダイアログの表示状態
 
   useEffect(() => {
     // アプリケーション起動時にアップデートを確認
     const timer = setTimeout(() => {
-      checkForUpdates();
-    }, 3000); // 3秒後に確認開始
+      checkForUpdates()
+    }, 3000) // 3秒後に確認開始
 
-    return () => clearTimeout(timer);
-  }, []);
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleInstallUpdate = async () => {
     try {
-      await invoke('install_update');
+      await invoke('install_update')
     } catch (error) {
-      console.error('アップデートのインストールに失敗:', error);
+      console.error('アップデートのインストールに失敗:', error)
     }
-  };
+  }
 
   const handleClose = () => {
-    setIsVisible(false); // ダイアログを非表示
-  };
+    setIsVisible(false) // ダイアログを非表示
+  }
 
-  if (!updateInfo.available || !isVisible) return null;
+  if (!updateInfo.available || !isVisible) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full text-center relative">
-        <h3 className="text-lg font-bold mb-4">新しいバージョンが利用可能です</h3>
+        <h3 className="text-lg font-bold mb-4">
+          新しいバージョンが利用可能です
+        </h3>
         <p className="mb-2">バージョン: {updateInfo.version}</p>
 
         {updateInfo.downloading && <p className="mb-2">ダウンロード中...</p>}
@@ -60,5 +62,5 @@ export const UpdaterDialog: React.FC = () => {
         )}
       </div>
     </div>
-  );
-};
+  )
+}
