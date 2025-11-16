@@ -10,11 +10,13 @@ import { TradeSummaryView } from './TradeSummaryView'
 import { DisplayModeToggle, DisplayMode } from '../components/DisplayModeToggle'
 import { TradeTable } from '../components/TradeTable'
 import { TradeFilter, TradeFilterValues } from '../components/TradeFilter'
+import { TradePlot } from '../components/TradePlot'
 
 export const TradeList: React.FC = () => {
   const [summary, setSummary] = useState<TradeSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [displayMode, setDisplayMode] = useState<DisplayMode>('円')
+  const [activeTab, setActiveTab] = useState<'list' | 'plot'>('list')
   const [filterValues, setFilterValues] = useState<TradeFilterValues>({
     startDate: getStartOfMonthString(),
     endDate: getTodayString(),
@@ -74,21 +76,43 @@ export const TradeList: React.FC = () => {
         onApply={fetchTrades}
       />
 
-      {/* 統計カード */}
       {summary ? (
         <>
-          <TradeSummaryView
-            summary={summary ?? null}
-            displayMode={displayMode}
-          />
+          <TradeSummaryView summary={summary} displayMode={displayMode} />
 
-          {/* トレード一覧 */}
-          <TradeTable
-            trades={summary.trades}
-            displayMode={displayMode}
-            onLabelClick={() => {}}
-            renderMemoButton={() => null}
-          />
+          <div className="flex gap-4 border-b mb-4">
+            <button
+              className={`pb-2 ${
+                activeTab === 'list' ? 'border-b-2 border-blue-500' : ''
+              }`}
+              onClick={() => setActiveTab('list')}
+            >
+              一覧
+            </button>
+            <button
+              className={`pb-2 ${
+                activeTab === 'plot' ? 'border-b-2 border-blue-500' : ''
+              }`}
+              onClick={() => setActiveTab('plot')}
+            >
+              プロット
+            </button>
+          </div>
+
+          <div className="mt-4 h-[55vh] overflow-y-auto border rounded-lg p-3">
+            {activeTab === 'list' && (
+              <TradeTable
+                trades={summary.trades}
+                displayMode={displayMode}
+                onLabelClick={() => {}}
+                renderMemoButton={() => null}
+              />
+            )}
+
+            {activeTab === 'plot' && (
+              <TradePlot trades={summary.trades} displayMode={displayMode} />
+            )}
+          </div>
         </>
       ) : (
         <div>該当データがありません。</div>
