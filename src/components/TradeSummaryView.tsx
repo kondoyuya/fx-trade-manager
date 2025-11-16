@@ -21,7 +21,7 @@ export const TradeSummaryView: React.FC<Props> = ({ summary, displayMode }) => {
   return (
     <>
       {/* 統計カード */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 mb-4">
         <StatCard
           title="総損益"
           color="green"
@@ -109,9 +109,9 @@ interface StatCardProps {
 
 const StatCard: React.FC<StatCardProps> = ({ title, color, value }) => (
   <div
-    className={`p-4 rounded-2xl shadow-md bg-${color}-100 border border-${color}-200 flex flex-col`}
+    className={`p-2 rounded-xl shadow-sm bg-${color}-100 border border-${color}-200 flex flex-col min-h-[60px] justify-center`}
   >
-    <span className="text-sm text-gray-600">{title}</span>
-    <span className="text-xl font-bold mt-1">{value}</span>
+    <span className="text-xs text-gray-600">{title}</span>
+    <span className="text-base font-semibold mt-0.5">{value}</span>
   </div>
 )
