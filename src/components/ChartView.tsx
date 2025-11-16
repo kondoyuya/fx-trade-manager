@@ -195,6 +195,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
 
   const [interval, setInterval] = useState<number>(60) // デフォルト 1分足
   const [trades, setTrades] = useState<Trade[]>([])
+  const [candles, setCandles] = useState<CandlestickData<Time>[]>([])
   const [visibleTrades, setVisibleTrades] = useState<Trade[]>([])
   const [searchTime, setSearchTime] = useState<string>('')
   const [showPopup, setShowPopup] = useState(false)
@@ -251,6 +252,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
           close: c.close,
         }))
         series.setData(formatted)
+        setCandles(formatted)
 
         // 初期表示
         const times = formatted.map((c) => c.time as number)
@@ -304,26 +306,18 @@ const ChartView: React.FC<ChartViewProps> = () => {
   // --- 指定時刻検索 ---
   const handleSearch = () => {
     if (!chartRef.current || !searchTime) return
-
     const targetUnix =
       Math.floor(new Date(searchTime).getTime() / 1000) + 3600 * 9
-
-    const series = candleSeriesRef.current
-    if (!series) return
-
-    const data = (series as any)._data as CandlestickData<Time>[]
-    if (!data || data.length === 0) return
-
-    const closest = data.reduce((prev, curr) =>
+    const closest = candles.reduce((prev, curr) =>
       Math.abs((curr.time as number) - targetUnix) <
       Math.abs((prev.time as number) - targetUnix)
         ? curr
-        : prev,
+        : prev
     )
 
     const rangeSize = 50
-    const from = ((closest.time as number) - rangeSize * 60) as Time
-    const to = ((closest.time as number) + rangeSize * 60) as Time
+    const from = ((closest.time as number) - rangeSize * interval) as Time
+    const to = ((closest.time as number) + rangeSize * interval) as Time
     chartRef.current.timeScale().setVisibleRange({ from, to })
   }
 
