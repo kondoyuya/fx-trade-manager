@@ -61,14 +61,14 @@ function App() {
           >
             💼 インポート
           </button>
-          <button
+          {/* <button
             className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${
               activeTab === 'statistics' ? 'bg-gray-700' : ''
             }`}
             onClick={() => setActiveTab('statistics')}
           >
             🔎 統計
-          </button>
+          </button> */}
 
           <button
             className={`w-full text-left p-3 rounded hover:bg-gray-700 transition ${

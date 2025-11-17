@@ -11,12 +11,15 @@ import { DisplayModeToggle, DisplayMode } from '../components/DisplayModeToggle'
 import { TradeTable } from '../components/TradeTable'
 import { TradeFilter, TradeFilterValues } from '../components/TradeFilter'
 import { TradePlot } from '../components/TradePlot'
+import { TradeHistogramPanel } from '../components/TradeHistogramPanel'
 
 export const TradeList: React.FC = () => {
   const [summary, setSummary] = useState<TradeSummary | null>(null)
   const [loading, setLoading] = useState(false)
   const [displayMode, setDisplayMode] = useState<DisplayMode>('円')
-  const [activeTab, setActiveTab] = useState<'list' | 'plot'>('list')
+  const [activeTab, setActiveTab] = useState<'list' | 'plot' | 'histogram'>(
+    'list',
+  )
   const [filterValues, setFilterValues] = useState<TradeFilterValues>({
     startDate: getStartOfMonthString(),
     endDate: getTodayString(),
@@ -97,6 +100,14 @@ export const TradeList: React.FC = () => {
             >
               プロット
             </button>
+            <button
+              className={`pb-2 ${
+                activeTab === 'histogram' ? 'border-b-2 border-blue-500' : ''
+              }`}
+              onClick={() => setActiveTab('histogram')}
+            >
+              ヒストグラム
+            </button>
           </div>
 
           <div className="mt-4 h-[55vh] overflow-y-auto border rounded-lg p-3">
@@ -111,6 +122,13 @@ export const TradeList: React.FC = () => {
 
             {activeTab === 'plot' && (
               <TradePlot trades={summary.trades} displayMode={displayMode} />
+            )}
+
+            {activeTab === 'histogram' && (
+              <TradeHistogramPanel
+                trades={summary.trades}
+                displayMode={displayMode}
+              />
             )}
           </div>
         </>
