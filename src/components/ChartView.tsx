@@ -312,7 +312,7 @@ const ChartView: React.FC<ChartViewProps> = () => {
       Math.abs((curr.time as number) - targetUnix) <
       Math.abs((prev.time as number) - targetUnix)
         ? curr
-        : prev
+        : prev,
     )
 
     const rangeSize = 50
