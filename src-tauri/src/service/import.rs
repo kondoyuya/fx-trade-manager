@@ -123,22 +123,22 @@ pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
 
 // DMM用の処理
 fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
-    // 売り・買いのポジションキュー
-    let mut buy_positions: VecDeque<Record> = VecDeque::new();
-    let mut sell_positions: VecDeque<Record> = VecDeque::new();
+    // 売り・買いのポジションスタック（LIFO）
+    let mut buy_positions: Vec<Record> = Vec::new();
+    let mut sell_positions: Vec<Record> = Vec::new();
 
-    // CSV全行を取得
+    // CSV 全行を取得
     let records: Vec<_> = rdr
         .records()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
-    // 時系列順（古い順）で処理
+    // 古い順に処理
     for row in records.iter().rev() {
         let order_time_str = row.get(9).unwrap_or("").to_string();
         let order_time_unix = jst_str_to_unix(&order_time_str).unwrap_or(0);
 
-        // CSV → Record構築
+        // CSV → Record 構築
         let record = Record {
             pair: row.get(0).unwrap_or("").to_string(),
             side: row.get(1).unwrap_or("").to_string(),
@@ -157,27 +157,31 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
         records::insert_record(db, &record)?;
 
         match record.trade_type.as_str() {
-            // 新規注文はポジションキューに積む
+            // --------------------------
+            // 新規注文 → スタックに push
+            // --------------------------
             "新規" => {
                 if record.side == "買" {
-                    buy_positions.push_back(record.clone());
+                    buy_positions.push(record.clone());
                 } else if record.side == "売" {
-                    sell_positions.push_back(record.clone());
+                    sell_positions.push(record.clone());
                 }
             }
 
-            // 決済注文の場合、対応する建玉をFIFOで決済
+            // --------------------------
+            // 決済注文 → LIFO で処理
+            // --------------------------
             "決済" => {
-                let queue = if record.side == "買" {
-                    &mut sell_positions // 売り建玉を決済
+                let stack = if record.side == "買" {
+                    &mut sell_positions // 売り建玉を LIFO で決済
                 } else {
-                    &mut buy_positions // 買い建玉を決済
+                    &mut buy_positions // 買い建玉を LIFO で決済
                 };
 
                 let mut remaining_lot = record.lot;
 
                 while remaining_lot > 0.0 {
-                    if let Some(mut entry) = queue.pop_front() {
+                    if let Some(mut entry) = stack.pop() {
                         let close_lot = remaining_lot.min(entry.lot);
                         let direction = if entry.side == "買" { 1.0 } else { -1.0 };
                         let profit_pips =
@@ -199,10 +203,10 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
 
                         trades::insert_trade(db, trade)?;
 
-                        // 部分決済なら残りを戻す
+                        // 部分決済ならスタックに戻す
                         if entry.lot > close_lot {
                             entry.lot -= close_lot;
-                            queue.push_front(entry);
+                            stack.push(entry);
                         }
 
                         remaining_lot -= close_lot;
@@ -219,6 +223,7 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
 
     Ok(())
 }
+
 
 // GMO用の処理
 fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
