@@ -8,6 +8,7 @@ import { UpdateMemoButton } from '../components/UpdateMemoButton'
 import { DisplayModeToggle } from '../components/DisplayModeToggle'
 import { TradeTable } from '../components/TradeTable'
 import { TradeSummaryView } from '../components/TradeSummaryView'
+import { formatProfit } from './format/Profit'
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -15,6 +16,7 @@ const CalendarView: React.FC = () => {
   const [showPopup, setShowPopup] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const [displayMode, setDisplayMode] = useState<'円' | 'pips'>('円')
+  const [activeMonth, setActiveMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     async function fetchSummary() {
@@ -78,6 +80,7 @@ const CalendarView: React.FC = () => {
         <div className="flex-shrink-0">
           <Calendar
             onClickDay={(value) => setSelectedDate(value)}
+            onActiveStartDateChange={({ activeStartDate }) => setActiveMonth(activeStartDate!)}
             tileContent={({ date }) => {
               const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
               const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, '0')}-${String(jst.getDate()).padStart(2, '0')}`
@@ -107,20 +110,12 @@ const CalendarView: React.FC = () => {
 
           <div className="mt-4 p-2 border rounded bg-gray-50">
             <h3 className="font-bold mb-1">
-              {selectedDate.getFullYear()}年{selectedDate.getMonth() + 1}
-              月の収支
+              {activeMonth.getFullYear()}年{activeMonth.getMonth() + 1}月の収支
             </h3>
-            <p
-              className={`font-semibold ${
-                getMonthlyProfit(selectedDate) >= 0
-                  ? 'text-blue-600'
-                  : 'text-red-600'
-              }`}
-            >
-              {(getMonthlyProfit(selectedDate) > 0 ? '+' : '') +
-                getMonthlyProfit(selectedDate) +
-                displayMode}
-            </p>
+
+            <td className="text-right font-semibold">
+              {formatProfit(displayMode, getMonthlyProfit(activeMonth), getMonthlyProfit(activeMonth))}
+            </td>
           </div>
         </div>
 
