@@ -42,32 +42,31 @@ const CalendarView: React.FC = () => {
     setShowPopup(true)
   }
 
-  // 月間利益を計算
-  const getMonthlyProfit = (date: Date): number => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
+const getMonthlyProfit = (date: Date): { yen: number; pips: number } => {
+  const year = date.getFullYear();
+  const month = date.getMonth();
 
-    const monthlySummaries = summaries.filter((s) => {
-      const sDate = new Date(s.date)
-      return sDate.getFullYear() === year && sDate.getMonth() === month
-    })
+  const monthlySummaries = summaries.filter((s) => {
+    const sDate = new Date(s.date);
+    return sDate.getFullYear() === year && sDate.getMonth() === month;
+  });
 
-    if (displayMode === '円') {
-      return monthlySummaries.reduce(
-        (sum, s) => sum + (s.summary.profit ?? 0),
-        0,
-      )
-    } else {
-      return (
-        monthlySummaries.reduce(
-          (sum, s) => sum + (s.summary.profit_pips ?? 0),
-          0,
-        ) / 10
-      )
-    }
-  }
+  const yenProfit = monthlySummaries.reduce(
+    (sum, s) => sum + (s.summary.profit ?? 0),
+    0
+  );
+
+  const pipsProfit =
+    monthlySummaries.reduce(
+      (sum, s) => sum + (s.summary.profit_pips ?? 0),
+      0
+    )
+
+  return { yen: yenProfit, pips: pipsProfit };
+};
 
   const tradesForDate = getSummaryFromDate(selectedDate)?.summary.trades ?? []
+  const monthly = getMonthlyProfit(activeMonth)
 
   return (
     <main className="container mx-auto p-4">
@@ -114,7 +113,7 @@ const CalendarView: React.FC = () => {
             </h3>
 
             <td className="text-right font-semibold">
-              {formatProfit(displayMode, getMonthlyProfit(activeMonth), getMonthlyProfit(activeMonth))}
+              {formatProfit(displayMode, monthly.yen, monthly.pips)}
             </td>
           </div>
         </div>
