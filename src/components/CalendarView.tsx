@@ -16,7 +16,7 @@ const CalendarView: React.FC = () => {
   const [showPopup, setShowPopup] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const [displayMode, setDisplayMode] = useState<'円' | 'pips'>('円')
-  const [activeMonth, setActiveMonth] = useState<Date>(new Date());
+  const [activeMonth, setActiveMonth] = useState<Date>(new Date())
 
   useEffect(() => {
     async function fetchSummary() {
@@ -42,28 +42,27 @@ const CalendarView: React.FC = () => {
     setShowPopup(true)
   }
 
-const getMonthlyProfit = (date: Date): { yen: number; pips: number } => {
-  const year = date.getFullYear();
-  const month = date.getMonth();
+  const getMonthlyProfit = (date: Date): { yen: number; pips: number } => {
+    const year = date.getFullYear()
+    const month = date.getMonth()
 
-  const monthlySummaries = summaries.filter((s) => {
-    const sDate = new Date(s.date);
-    return sDate.getFullYear() === year && sDate.getMonth() === month;
-  });
+    const monthlySummaries = summaries.filter((s) => {
+      const sDate = new Date(s.date)
+      return sDate.getFullYear() === year && sDate.getMonth() === month
+    })
 
-  const yenProfit = monthlySummaries.reduce(
-    (sum, s) => sum + (s.summary.profit ?? 0),
-    0
-  );
-
-  const pipsProfit =
-    monthlySummaries.reduce(
-      (sum, s) => sum + (s.summary.profit_pips ?? 0),
-      0
+    const yenProfit = monthlySummaries.reduce(
+      (sum, s) => sum + (s.summary.profit ?? 0),
+      0,
     )
 
-  return { yen: yenProfit, pips: pipsProfit };
-};
+    const pipsProfit = monthlySummaries.reduce(
+      (sum, s) => sum + (s.summary.profit_pips ?? 0),
+      0,
+    )
+
+    return { yen: yenProfit, pips: pipsProfit }
+  }
 
   const tradesForDate = getSummaryFromDate(selectedDate)?.summary.trades ?? []
   const monthly = getMonthlyProfit(activeMonth)
@@ -79,7 +78,9 @@ const getMonthlyProfit = (date: Date): { yen: number; pips: number } => {
         <div className="flex-shrink-0">
           <Calendar
             onClickDay={(value) => setSelectedDate(value)}
-            onActiveStartDateChange={({ activeStartDate }) => setActiveMonth(activeStartDate!)}
+            onActiveStartDateChange={({ activeStartDate }) =>
+              setActiveMonth(activeStartDate!)
+            }
             tileContent={({ date }) => {
               const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
               const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, '0')}-${String(jst.getDate()).padStart(2, '0')}`

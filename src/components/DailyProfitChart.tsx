@@ -10,7 +10,7 @@ import {
 } from 'recharts'
 import { DailySummary } from '../types'
 import { invoke } from '@tauri-apps/api/core'
-import { DisplayModeToggle, DisplayMode } from '../components/DisplayModeToggle'
+import { DisplayModeToggle, DisplayMode } from './DisplayModeToggle'
 import { getTodayString, getStartOfYearString } from '../utils/time'
 
 function computeCumulativeProfit(

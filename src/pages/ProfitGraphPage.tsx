@@ -1,5 +1,5 @@
 import React from 'react'
-import ProfitChart from '../components/ProfitChart.tsx'
+import ProfitChart from '../components/DailyProfitChart.tsx'
 
 const HistoryPage: React.FC = () => {
   return (
