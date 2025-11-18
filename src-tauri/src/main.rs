@@ -13,11 +13,7 @@ mod utils;
 
 use crate::db::DbState;
 use python_server::start_python_server;
-use std::path::PathBuf;
-use std::process::{Child, Command};
 use std::sync::{Arc, Mutex};
-use tauri::{generate_handler, Builder, RunEvent, WindowEvent};
-use tauri_plugin_updater::UpdaterExt;
 
 #[tauri::command]
 fn quit_app() {
@@ -27,7 +23,7 @@ fn quit_app() {
 fn main() {
     let db = DbState::new().expect("Failed to init database");
     // Python サーバー起動
-    let python_server = match start_python_server(&db) {
+    let python_server = match start_python_server() {
         Ok(child) => Some(Arc::new(Mutex::new(child))),
         Err(err) => {
             eprintln!("Failed to start Python server: {}", err);
