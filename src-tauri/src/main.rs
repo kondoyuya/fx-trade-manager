@@ -14,6 +14,7 @@ mod utils;
 use crate::db::DbState;
 use python_server::start_python_server;
 use std::sync::{Arc, Mutex};
+use tauri::{WindowEvent};
 
 #[tauri::command]
 fn quit_app() {
