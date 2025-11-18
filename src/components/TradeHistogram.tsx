@@ -87,9 +87,9 @@ export const TradeHistogram: React.FC<Props> = ({
 
           <Tooltip
             formatter={(v, name) => {
-              if (name === 'pos') return [`${v} 回（勝ち）`, '頻度']
-              if (name === 'neg') return [`${Math.abs(v)} 回（負け）`, '頻度']
-              return v
+              if (name === 'pos' && v != "0") return [`${v} 回`, '頻度']
+              else if (name === 'neg' && v != "0") return [`${v} 回`, '頻度']
+              else return []
             }}
             labelFormatter={(l) => `${l} ${unit}`}
           />
