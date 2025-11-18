@@ -108,3 +108,9 @@ pub fn get_filtered_trades_summary(
     let db = &*state;
     crate::service::trades::get_filtered_trades_summary(db, filter)
 }
+
+#[tauri::command]
+pub fn merge_trades(state: State<DbState>, ids: Vec<i64>) -> Result<(), String> {
+    let db = &*state;
+    crate::service::trades::merge_trades(db, ids)
+}

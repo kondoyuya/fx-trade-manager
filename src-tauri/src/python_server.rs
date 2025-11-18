@@ -6,10 +6,10 @@ use std::os::windows::process::CommandExt;
 /// exe 起動時に venv をセットアップして Python サーバーを起動する
 pub fn start_python_server() -> Result<Child, String> {
     let exe_dir = std::env::current_exe()
-    .expect("Failed to get exe path")
-    .parent()
-    .expect("Failed to get exe dir")
-    .to_path_buf();
+        .expect("Failed to get exe path")
+        .parent()
+        .expect("Failed to get exe dir")
+        .to_path_buf();
 
     let server_exe = exe_dir.join("mt5").join("mt5_server.exe");
 

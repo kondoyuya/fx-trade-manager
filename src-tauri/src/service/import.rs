@@ -151,8 +151,6 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
             ..Default::default()
         };
 
-        dbg!(&record);
-
         // DBに登録
         records::insert_record(db, &record)?;
 
@@ -223,7 +221,6 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
 
     Ok(())
 }
-
 
 // GMO用の処理
 fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {

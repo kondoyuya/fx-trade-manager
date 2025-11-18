@@ -1,6 +1,6 @@
 import React from 'react'
 import RecordUploader from '../components/RecordUploader.tsx'
-import CandleUploader from "../components/CandleUploader.tsx";
+import CandleUploader from '../components/CandleUploader.tsx'
 
 const HistoryPage: React.FC = () => {
   return (

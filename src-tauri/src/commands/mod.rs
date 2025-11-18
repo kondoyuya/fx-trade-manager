@@ -22,6 +22,7 @@ macro_rules! register_commands {
             crate::commands::handlers::fetch_and_update_ohlc,
             crate::commands::records_cmd::update_memo,
             crate::commands::records_cmd::get_filtered_trades_summary,
+            crate::commands::records_cmd::merge_trades,
         ])
     };
 }

@@ -18,16 +18,17 @@ const CalendarView: React.FC = () => {
   const [displayMode, setDisplayMode] = useState<'円' | 'pips'>('円')
   const [activeMonth, setActiveMonth] = useState<Date>(new Date())
 
-  useEffect(() => {
-    async function fetchSummary() {
-      try {
-        const data = await invoke<DailySummary[]>('get_daily_records')
-        setSummaries(data)
-        console.log(data)
-      } catch (err) {
-        console.error('Failed to fetch summaries:', err)
-      }
+  async function fetchSummary() {
+    try {
+      const data = await invoke<DailySummary[]>('get_daily_records')
+      setSummaries(data)
+      console.log(data)
+    } catch (err) {
+      console.error('Failed to fetch summaries:', err)
     }
+  }
+
+  useEffect(() => {
     fetchSummary()
   }, [])
 
@@ -137,6 +138,7 @@ const CalendarView: React.FC = () => {
             renderMemoButton={(id, memo) => (
               <UpdateMemoButton tradeId={id} memoContent={memo ?? ''} />
             )}
+            onMerged={fetchSummary}
           />
         </div>
       </div>

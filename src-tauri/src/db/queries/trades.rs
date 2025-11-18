@@ -1,11 +1,11 @@
-use rusqlite::{params, params_from_iter, Result};
+use rusqlite::{params, params_from_iter, Result, ToSql};
 
 use crate::db::DbState;
 use crate::models::db::trade::Trade;
 use crate::models::filter::trade_filter::TradeFilter;
 use crate::utils::time_utils;
 
-pub fn insert_trade(state: &DbState, trade: Trade) -> Result<(), String> {
+pub fn insert_trade(state: &DbState, trade: Trade) -> Result<i64, String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
     state.execute(
         "INSERT OR IGNORE INTO trades (
@@ -26,13 +26,113 @@ pub fn insert_trade(state: &DbState, trade: Trade) -> Result<(), String> {
         ],
     )
     .map_err(|e| e.to_string())?;
+    Ok(state.last_insert_rowid())
+}
+
+pub fn get_by_ids(state: &DbState, ids: Vec<i64>) -> Result<Vec<Trade>, String> {
+    let state = state.conn.lock().map_err(|e| e.to_string())?;
+    let placeholders = ids
+        .iter()
+        .map(|_| "?".to_string())
+        .collect::<Vec<_>>()
+        .join(",");
+
+    let sql = format!(
+        "SELECT id, pair, side, lot, entry_rate, exit_rate,
+                entry_time, exit_time, profit, profit_pips, swap
+        FROM trades
+        WHERE is_deleted = 0 AND id IN ({})",
+        placeholders
+    );
+
+    let mut stmt = state.prepare(&sql).map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map(rusqlite::params_from_iter(ids.clone()), |row| {
+            Ok(Trade {
+                id: row.get(0)?,
+                pair: row.get(1)?,
+                side: row.get(2)?,
+                lot: row.get(3)?,
+                entry_rate: row.get(4)?,
+                exit_rate: row.get(5)?,
+                entry_time: row.get(6)?,
+                exit_time: row.get(7)?,
+                profit: row.get(8)?,
+                profit_pips: row.get(9)?,
+                swap: row.get(10)?,
+                ..Default::default()
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut trades = Vec::new();
+    for r in rows {
+        trades.push(r.map_err(|e| e.to_string())?);
+    }
+    Ok(trades)
+}
+
+pub fn delete_by_ids(state: &DbState, ids: Vec<i64>) -> Result<(), String> {
+    if ids.is_empty() {
+        return Ok(());
+    }
+
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let placeholders = std::iter::repeat("?")
+        .take(ids.len())
+        .collect::<Vec<_>>()
+        .join(",");
+
+    let sql = format!(
+        "UPDATE trades
+         SET is_deleted = 1
+         WHERE id IN ({})",
+        placeholders
+    );
+
+    let params: Vec<&dyn ToSql> = ids.iter().map(|id| id as &dyn ToSql).collect();
+
+    conn.execute(&sql, &params[..]).map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub fn update_merge_to(state: &DbState, ids: Vec<i64>, merge_to: i64) -> Result<(), String> {
+    if ids.is_empty() {
+        return Ok(());
+    }
+
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let placeholders = std::iter::repeat("?")
+        .take(ids.len())
+        .collect::<Vec<_>>()
+        .join(",");
+
+    let sql = format!(
+        "UPDATE trades
+         SET merged_to = ?
+         WHERE id IN ({})",
+        placeholders
+    );
+
+    let mut params: Vec<&dyn rusqlite::ToSql> = Vec::with_capacity(1 + ids.len());
+    params.push(&merge_to);
+    for id in &ids {
+        params.push(id);
+    }
+
+    conn.execute(&sql, &params[..]).map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 pub fn get_all_trades(state: &DbState) -> Result<Vec<Trade>, String> {
     let state = state.conn.lock().map_err(|e| e.to_string())?;
     let mut stmt = state
-        .prepare("SELECT * FROM trades ORDER BY exit_time DESC")
+        .prepare("SELECT * FROM trades WHERE is_deleted = 0 ORDER BY exit_time DESC")
         .map_err(|e| e.to_string())?;
 
     let rows = stmt
@@ -66,7 +166,8 @@ pub fn get_trades_by_label(state: &DbState, label_id: i32) -> Result<Vec<Trade>,
     let mut stmt = state
         .prepare(
             "SELECT * FROM trades 
-            WHERE id IN (
+            WHERE is_deleted = 0 
+            AND id IN (
                 SELECT trade_id FROM trade_labels WHERE label_id = ?1
             )
             ORDER BY exit_time DESC",
@@ -124,7 +225,7 @@ pub fn update_trade_memo_by_id(state: &DbState, trade: Trade) -> Result<(), Stri
 pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>, String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-    let mut query = String::from("SELECT * FROM trades WHERE 1=1");
+    let mut query = String::from("SELECT * FROM trades WHERE is_deleted = 0");
     let mut params_vec: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
     if let Some(start_str) = &filter.start_date {

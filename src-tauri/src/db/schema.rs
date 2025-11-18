@@ -56,6 +56,8 @@ pub const TABLES: &[&str] = &[
         profit_pips INTEGER NOT NULL,
         swap INTEGER,
         memo TEXT,
+        is_deleted INTEGER DEFAULT 0,
+        merged_to INTEGER,
         UNIQUE(pair, side, lot , entry_time, exit_time, entry_rate, exit_rate, profit, profit_pips, swap)
     )
     "#,
