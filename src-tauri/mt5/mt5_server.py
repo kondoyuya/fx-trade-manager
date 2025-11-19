@@ -1,3 +1,17 @@
+import sys
+import os
+
+# PyInstaller 対応：MetaTrader5 パス追加
+if getattr(sys, 'frozen', False):
+    base_path = sys._MEIPASS
+    mt5_path = os.path.join(base_path, "MetaTrader5")
+    if mt5_path not in sys.path:
+        sys.path.append(mt5_path)
+
+    numpy_path = os.path.join(base_path, "numpy")
+    if numpy_path not in sys.path:
+        sys.path.append(numpy_path)
+
 from flask import Flask, request, jsonify
 import MetaTrader5 as mt5
 from datetime import datetime, timedelta
@@ -8,6 +22,7 @@ app = Flask(__name__)
 if not mt5.initialize():
     print("MT5 initialize failed")
     exit()
+
 
 # ---- Europe/Helsinkiの夏時間/冬時間の判定に基づき、UnixTimeを調整する ----
 def broker_to_utc_unixtime(broker_ts: int) -> int:
@@ -28,9 +43,10 @@ def broker_to_utc_unixtime(broker_ts: int) -> int:
     
     return adjusted_unixtime
 
+
 def get_ohlc_since(symbol: str, timeframe, since_time: int, batch_size=1000):
     all_rates = []
-    pos = 1 # 今の足は確定足ではないので除く
+    pos = 1  # 今の足は確定足ではないので除く
 
     while True:
         print(pos)
@@ -38,7 +54,11 @@ def get_ohlc_since(symbol: str, timeframe, since_time: int, batch_size=1000):
         if rates is None or len(rates) == 0:
             break
 
-        new_rates = [r for r in rates if broker_to_utc_unixtime(int(r['time'])) > since_time]
+        new_rates = [
+            r for r in rates
+            if broker_to_utc_unixtime(int(r['time'])) > since_time
+        ]
+
         if not new_rates:
             break
 
@@ -47,6 +67,7 @@ def get_ohlc_since(symbol: str, timeframe, since_time: int, batch_size=1000):
 
     all_rates.sort(key=lambda x: x['time'])
     return all_rates
+
 
 @app.route("/get_ohlc")
 def get_ohlc():
@@ -71,6 +92,7 @@ def get_ohlc():
             })
 
     return jsonify(result)
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)
