@@ -1,10 +1,11 @@
-use crate::db::queries::meta;
-use crate::db::DbState;
+use rusqlite::Connection;
 
-pub fn get_meta(db: &DbState, key: &str) -> Result<Option<String>, String> {
-    meta::get_meta(db, key)
+use crate::db::queries::meta;
+
+pub fn get_meta(conn: &Connection, key: &str) -> Result<Option<String>, String> {
+    meta::get_meta(conn, key)
 }
 
-pub fn set_meta(db: &DbState, key: &str, value: &str) -> Result<(), String> {
-    meta::set_meta(db, key, value)
+pub fn set_meta(conn: &Connection, key: &str, value: &str) -> Result<(), String> {
+    meta::set_meta(conn, key, value)
 }

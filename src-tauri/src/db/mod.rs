@@ -5,6 +5,7 @@ use std::sync::{Arc, Mutex};
 
 pub mod queries;
 pub mod schema;
+pub mod migration;
 
 pub struct DbState {
     pub conn: Arc<Mutex<Connection>>,
@@ -34,8 +35,14 @@ impl DbState {
             conn.execute(table_sql, [])?;
         }
 
-        Ok(Self {
+        let state = Self {
             conn: Arc::new(Mutex::new(conn)),
-        })
+        };
+
+        // マイグレーション実行
+        crate::db::migration::run_migrations(&state)
+            .map_err(|_e| rusqlite::Error::ExecuteReturnedResults)?;
+
+        Ok(state)
     }
 }
