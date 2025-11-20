@@ -19,11 +19,10 @@ pub const MIGRATIONS: &[Migration] = &[
 pub fn run_migrations(state: &DbState) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
 
-    println!("ok");
-    let current = meta::get_meta(&conn, "local_version")?
-        .unwrap_or("0.0.0".to_string());
-    println!("ok");
-    println!("{}", current);
+    let current = match meta::get_meta(&conn, "local_version")? {
+        Some(v) => v,
+        None => "0.0.0".to_string(),
+    };
 
     for mig in MIGRATIONS {
         if version_lt(&current, &mig.version) {
