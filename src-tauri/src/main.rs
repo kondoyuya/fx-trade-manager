@@ -15,6 +15,7 @@ use crate::db::DbState;
 use python_server::start_python_server;
 use std::sync::{Arc, Mutex};
 use tauri::WindowEvent;
+use std::process::Command;
 
 #[tauri::command]
 fn quit_app() {
@@ -23,16 +24,15 @@ fn quit_app() {
 
 fn main() {
     let db = DbState::new().expect("Failed to init database");
+
     // Python サーバー起動
-    let python_server = match start_python_server() {
+    let _python_server = match start_python_server() {
         Ok(child) => Some(Arc::new(Mutex::new(child))),
         Err(err) => {
             eprintln!("Failed to start Python server: {}", err);
             None
         }
     };
-
-    let python_server_clone = python_server.clone();
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_fs::init())
@@ -46,17 +46,17 @@ fn main() {
                 println!("Close requested: shutting down Python server...");
                 api.prevent_close(); // デフォルトの即終了を防ぐ
 
-                if let Some(server) = &python_server_clone {
-                    if let Ok(mut child) = server.lock() {
-                        if let Err(err) = child.kill() {
-                            eprintln!("Failed to kill Python server: {}", err);
-                        } else {
-                            println!("Python server stopped.");
-                        }
-                    }
+                #[cfg(windows)]
+                {
+                    println!("Killing all mt5_server.exe ...");
+
+                    let _ = Command::new("taskkill")
+                        .args(&["/IM", "mt5_server.exe", "/F"])
+                        .status();
+
+                    println!("All mt5_server.exe processes killed.");
                 }
 
-                // Pythonサーバーをkillした後、アプリを終了
                 std::process::exit(0);
             }
         });
