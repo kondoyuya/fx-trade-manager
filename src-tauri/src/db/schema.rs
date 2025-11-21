@@ -58,19 +58,8 @@ pub const TABLES: &[&str] = &[
         memo TEXT,
         -- is_deleted INTEGER DEFAULT 0,
         -- merged_to INTEGER,
+        -- accunt TEXT,
         UNIQUE(pair, side, lot , entry_time, exit_time, entry_rate, exit_rate, profit, profit_pips, swap)
-    )
-    "#,
-    r#"
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_trades_unique
-        ON trades(
-        pair,
-        side,
-        lot,
-        entry_time,
-        exit_time,
-        COALESCE(profit, 0),
-        COALESCE(swap, 0)
     )
     "#,
     r#"

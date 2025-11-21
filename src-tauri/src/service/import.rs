@@ -196,6 +196,7 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
                             profit: record.profit.unwrap_or(0),
                             profit_pips,
                             swap: record.swap,
+                            account: "DMM".to_string(),
                             ..Default::default()
                         };
 
@@ -295,6 +296,7 @@ fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
                             profit: record.profit.unwrap_or(0),
                             profit_pips,
                             swap: record.swap,
+                            account: "GMO".to_string(),
                             ..Default::default()
                         };
 
