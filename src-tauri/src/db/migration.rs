@@ -14,6 +14,56 @@ pub const MIGRATIONS: &[Migration] = &[
             ALTER TABLE trades ADD COLUMN merged_to INTEGER;
         "#,
     },
+    Migration {
+        version: "0.7.18",
+        sql: r#"
+            PRAGMA foreign_keys = OFF;
+
+            DROP INDEX IF EXISTS idx_trades_unique;
+
+            ALTER TABLE trades RENAME TO trades_old;
+
+            CREATE TABLE trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                pair TEXT NOT NULL,
+                side TEXT NOT NULL,
+                lot REAL NOT NULL,
+                entry_rate REAL NOT NULL,
+                exit_rate REAL NOT NULL,
+                entry_time INTEGER NOT NULL,
+                exit_time INTEGER NOT NULL,
+                profit INTEGER NOT NULL,
+                profit_pips INTEGER NOT NULL,
+                swap INTEGER,
+                memo TEXT,
+                is_deleted INTEGER DEFAULT 0,
+                merged_to INTEGER,
+                account TEXT NOT NULL DEFAULT '',
+                UNIQUE(
+                    pair, side, lot,
+                    entry_time, exit_time,
+                    entry_rate, exit_rate,
+                    profit, profit_pips,
+                    swap, account
+                )
+            );
+
+            INSERT INTO trades (
+                id, pair, side, lot, entry_rate, exit_rate,
+                entry_time, exit_time, profit, profit_pips,
+                swap, memo, is_deleted, merged_to, account
+            )
+            SELECT
+                id, pair, side, lot, entry_rate, exit_rate,
+                entry_time, exit_time, profit, profit_pips,
+                swap, memo, is_deleted, merged_to, ''
+            FROM trades_old;
+
+            DROP TABLE trades_old;
+
+            PRAGMA foreign_keys = ON;
+        "#,
+    },
 ];
 
 pub fn run_migrations(state: &DbState) -> Result<(), String> {

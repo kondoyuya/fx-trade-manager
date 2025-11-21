@@ -14,4 +14,5 @@ pub struct Trade {
     pub profit_pips: i32, // 整数で管理する　ドル円: 1円→1000
     pub swap: Option<i32>,
     pub memo: String,
+    pub account: String,
 }
