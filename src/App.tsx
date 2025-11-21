@@ -7,7 +7,7 @@ import StatisticsPage from './pages/StatisticsPage'
 import ProfitGraphPage from './pages/ProfitGraphPage'
 import { Tab } from './types'
 import './index.css'
-import { UpdaterDialog } from './components/UpdaterDialog'
+import { UpdaterFooter } from './components/UpdaterFooter'
 import { getVersion } from '@tauri-apps/api/app'
 
 function App() {
@@ -82,13 +82,13 @@ function App() {
 
         {/* フッター */}
         <div className="p-4 border-t border-gray-700 text-sm text-gray-400">
+          <UpdaterFooter />
           © 2025 FX Manager v{version}
         </div>
       </aside>
 
       {/* メインコンテンツ */}
       <main className="flex-1 bg-gray-100 p-6 overflow-auto">
-        <UpdaterDialog />
         {activeTab === 'calendar' && <CalendarPage />}
         {activeTab === 'history' && <HistoryPage />}
         {activeTab === 'chart' && <ChartPage />}
