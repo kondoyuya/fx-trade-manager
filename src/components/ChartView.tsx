@@ -13,7 +13,9 @@ import { invoke } from '@tauri-apps/api/core'
 import { LabelSelectPopup } from '../components/LabelSelectButton'
 import { UpdateOHLCButton } from '../components/UpdateOHLCButton'
 
-interface ChartViewProps {}
+interface ChartViewProps {
+  selectedTradeTime?: number | null
+}
 
 interface Candle {
   time: number // UNIX秒
@@ -187,7 +189,7 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
   updateAllViews() {}
 }
 
-const ChartView: React.FC<ChartViewProps> = () => {
+const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null)
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
   const primitiveRef = useRef<DebugPrimitive | null>(null)
@@ -197,13 +199,29 @@ const ChartView: React.FC<ChartViewProps> = () => {
   const [trades, setTrades] = useState<Trade[]>([])
   const [candles, setCandles] = useState<CandlestickData<Time>[]>([])
   const [visibleTrades, setVisibleTrades] = useState<Trade[]>([])
-  const [searchTime, setSearchTime] = useState<string>('')
+  const [searchTime, setSearchTime] = useState<number>()
   const [showPopup, setShowPopup] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
 
   const handleLabelClick = (trade: Trade) => {
     setSelectedTrade(trade)
     setShowPopup(true)
+  }
+
+  // --- 指定時刻検索 ---
+  const handleSearch = () => {
+    if (!chartRef.current || !searchTime) return
+    const closest = candles.reduce((prev, curr) =>
+      Math.abs((curr.time as number) - searchTime) <
+      Math.abs((prev.time as number) - searchTime)
+        ? curr
+        : prev,
+    )
+
+    const rangeSize = 50
+    const from = ((closest.time as number) - rangeSize * interval) as Time
+    const to = ((closest.time as number) + rangeSize * interval) as Time
+    chartRef.current.timeScale().setVisibleRange({ from, to })
   }
 
   // --- チャート再生成 ---
@@ -255,10 +273,25 @@ const ChartView: React.FC<ChartViewProps> = () => {
         setCandles(formatted)
 
         // 初期表示
-        const times = formatted.map((c) => c.time as number)
-        const to = times[times.length - 1] as Time
-        const from = times[Math.max(0, times.length - 100)] as Time
-        chart.timeScale().setVisibleRange({ from, to })
+        if (initialSearchTime >= 0) {
+          console.log("a")
+          const closest = candles.reduce((prev, curr) =>
+            Math.abs((curr.time as number) - initialSearchTime) <
+            Math.abs((prev.time as number) - initialSearchTime)
+              ? curr
+              : prev,
+          )
+          const rangeSize = 50
+          const from = ((closest.time as number) - rangeSize * interval) as Time
+          const to = ((closest.time as number) + rangeSize * interval) as Time
+          chart.timeScale().setVisibleRange({ from, to })
+        } else {
+          console.log("b")
+          const times = formatted.map((c) => c.time as number)
+          const to = times[times.length - 1] as Time
+          const from = times[Math.max(0, times.length - 100)] as Time
+          chart.timeScale().setVisibleRange({ from, to })
+        }
       } catch (err) {
         console.error('ローソク足取得失敗:', err)
       }
@@ -273,7 +306,14 @@ const ChartView: React.FC<ChartViewProps> = () => {
       }
     }
 
+    // React の state 更新は非同期なのでsearchTimeを即座に参照できない
+    let initialSearchTime = -1
+    if (selectedTradeTime) {
+      initialSearchTime = selectedTradeTime + 3600 * 9
+      setSearchTime(initialSearchTime);
+    }
     fetchAndRender()
+
   }, [interval])
 
   // --- 可視範囲内トレード更新 ---
@@ -303,33 +343,19 @@ const ChartView: React.FC<ChartViewProps> = () => {
     }
   }, [trades])
 
-  // --- 指定時刻検索 ---
-  const handleSearch = () => {
-    if (!chartRef.current || !searchTime) return
-    const targetUnix =
-      Math.floor(new Date(searchTime).getTime() / 1000) + 3600 * 9
-    const closest = candles.reduce((prev, curr) =>
-      Math.abs((curr.time as number) - targetUnix) <
-      Math.abs((prev.time as number) - targetUnix)
-        ? curr
-        : prev,
-    )
-
-    const rangeSize = 50
-    const from = ((closest.time as number) - rangeSize * interval) as Time
-    const to = ((closest.time as number) + rangeSize * interval) as Time
-    chartRef.current.timeScale().setVisibleRange({ from, to })
-  }
-
   return (
     <div className="flex flex-col items-center mt-4 space-y-4">
       <div className="flex items-center space-x-2">
-        <input
-          type="datetime-local"
-          value={searchTime}
-          onChange={(e) => setSearchTime(e.target.value)}
-          className="border rounded p-1"
-        />
+      <input
+        type="datetime-local"
+        value={searchTime ? new Date(searchTime * 1000).toISOString().slice(0,16) : ''}
+        onChange={(e) => {
+          const date = new Date(e.target.value)
+          const unixTime = Math.floor(date.getTime() / 1000) + 3600 * 9
+          setSearchTime(unixTime)
+        }}
+        className="border rounded p-1"
+      />
         <button
           onClick={handleSearch}
           className="bg-blue-500 text-white px-3 py-1 rounded"
