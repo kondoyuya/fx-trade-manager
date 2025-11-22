@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import ChartView from '../components/ChartView'
 
 const ChartPage: React.FC = () => {
-  const { tradeId, timestamp } = useParams<{ tradeId: string; timestamp: string }>()
+  const { timestamp } = useParams<{ timestamp: string }>()
 
   const selectedTradeTime = timestamp ? Number(timestamp) : null
 
