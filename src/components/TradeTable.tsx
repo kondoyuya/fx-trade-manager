@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Trade } from '../types'
 import { formatProfit } from './format/Profit'
 import { invoke } from '@tauri-apps/api/core'
@@ -22,6 +23,7 @@ export const TradeTable: React.FC<TradeTableProps> = ({
   onMerged,
 }) => {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const navigate = useNavigate()
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -87,7 +89,8 @@ export const TradeTable: React.FC<TradeTableProps> = ({
           {trades.map((t) => (
             <tr
               key={t.id}
-              className="border-b hover:bg-gray-50 transition-colors"
+              onClick={() => navigate(`/chart/${t.id}/${t.entry_time}`)}
+              className="cursor-pointer hover:bg-gray-200"
             >
               <td className="px-2 py-1 text-center">
                 <input
