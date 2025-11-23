@@ -9,22 +9,34 @@ const RecordUploader: React.FC<RecordUploaderProps> = () => {
 
   const handleFileOpen = async () => {
     const selected = await open({
-      multiple: false,
+      multiple: true,
       filters: [{ name: 'CSV', extensions: ['csv'] }],
-    })
+    });
 
-    if (typeof selected === 'string') {
-      setStatus('Importing CSV...')
+    if (!selected) return;
 
-      try {
-        await invoke('insert_record', { csvPath: selected })
-        setStatus('CSV imported successfully!')
-      } catch (e) {
-        console.error(e)
-        setStatus(`Failed to import CSV: ${JSON.stringify(e)}`)
-      }
+    let csvPaths: string[] = [];
+
+    if (Array.isArray(selected)) {
+      csvPaths = selected as string[];
+    } else if (typeof selected === "string") {
+      csvPaths = [selected];
+    } else {
+      setStatus("Invalid file selection");
+      return;
     }
-  }
+
+    setStatus("Importing CSV...");
+
+    try {
+      console.log(csvPaths);
+      await invoke("insert_record", { csvPaths });
+      setStatus("CSV imported successfully!");
+    } catch (e) {
+      console.error(e);
+      setStatus(`Failed to import CSV: ${JSON.stringify(e)}`);
+    }
+  };
 
   return (
     <main className="container mx-auto p-4">

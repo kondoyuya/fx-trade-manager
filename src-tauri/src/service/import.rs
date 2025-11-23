@@ -1,140 +1,210 @@
-use crate::db::queries::{candles, records, trades};
+use crate::db::queries::{candles, trades};
 use crate::db::DbState;
 use crate::models::db::candle::Candle;
 use crate::models::db::record::Record;
 use crate::models::db::trade::Trade;
 use crate::utils::time_utils::jst_str_to_unix;
-use chrono::{NaiveDateTime, TimeZone, Utc};
+use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Helsinki;
-use csv::ReaderBuilder;
+use csv::{ReaderBuilder};
 use encoding_rs::SHIFT_JIS;
 use encoding_rs_io::DecodeReaderBytesBuilder;
-use std::collections::VecDeque;
 use std::fs::File;
 
-pub fn import_csv_to_db(db: &DbState, csv_path: &str) -> Result<(), String> {
-    // SJIS → UTF-8 デコード
-    let file = File::open(csv_path).map_err(|e| e.to_string())?;
-    let transcoded = DecodeReaderBytesBuilder::new()
-        .encoding(Some(SHIFT_JIS))
-        .build(file);
+pub fn import_csv_to_db(db: &DbState, csv_paths: Vec<String>) -> Result<(), String> {
+    if csv_paths.is_empty() {
+        return Err("CSVファイルが選択されていません".to_string());
+    }
 
-    let mut rdr = ReaderBuilder::new()
-        .has_headers(true)
-        .from_reader(transcoded);
+    #[derive(PartialEq, Eq, Debug)]
+    enum AccountType {
+        Dmm,
+        Gmo,
+    }
 
-    // ヘッダーで口座の判別
-    let expected_headers_dmm = [
-        "通貨ペア",
-        "売買",
-        "区分",
-        "数量（Lot）",
-        "約定レート",
-        "建玉損益（円）",
-        "スワップ",
-        "決済損益（円）",
-        "注文日時",
-        "約定日時",
-        "注文番号",
-        "円転レート",
-        "取引手数料",
-        "建玉損益",
+    let expected_headers_dmm = vec![
+        "通貨ペア", "売買", "区分", "数量（Lot）", "約定レート", "建玉損益（円）",
+        "スワップ", "決済損益（円）", "注文日時", "約定日時", "注文番号", "円転レート",
+        "取引手数料", "建玉損益",
     ];
-    let expected_headers_gmo = [
-        "約定日時",
-        "取引区分",
-        "受渡日",
-        "約定番号",
-        "銘柄名",
-        "銘柄コード",
-        "限月",
-        "コールプット区分",
-        "権利行使価格",
-        "権利行使価格通貨",
-        "カバードワラント商品種別",
-        "売買区分",
-        "通貨",
-        "受渡通貨",
-        "市場",
-        "口座",
-        "信用区分",
-        "約定数量",
-        "約定単価",
-        "コンバージョンレート",
-        "手数料",
-        "手数料消費税",
-        "建単価",
-        "新規手数料",
-        "新規手数料消費税",
-        "管理費",
-        "名義書換料",
-        "金利",
-        "貸株料",
-        "品貸料",
-        "前日分値洗",
-        "経過利子（円貨）",
-        "経過利子（外貨）",
-        "経過日数（外債）",
-        "所得税（外債）",
-        "地方税（外債）",
-        "金利・価格調整額（CFD）",
-        "配当金調整額（CFD）",
-        "金利・価格調整額（くりっく株365）",
-        "配当金調整額（くりっく株365）",
+
+    let expected_headers_gmo = vec![
+        "約定日時", "取引区分", "受渡日", "約定番号", "銘柄名", "銘柄コード",
+        "限月", "コールプット区分", "権利行使価格", "権利行使価格通貨",
+        "カバードワラント商品種別", "売買区分", "通貨", "受渡通貨", "市場", "口座",
+        "信用区分", "約定数量", "約定単価", "コンバージョンレート", "手数料",
+        "手数料消費税", "建単価", "新規手数料", "新規手数料消費税", "管理費",
+        "名義書換料", "金利", "貸株料", "品貸料", "前日分値洗", "経過利子（円貨）",
+        "経過利子（外貨）", "経過日数（外債）", "所得税（外債）", "地方税（外債）",
+        "金利・価格調整額（CFD）", "配当金調整額（CFD）",
+        "金利・価格調整額（くりっく株365）", "配当金調整額（くりっく株365）",
         "売建単価（くりっく365/くりっく株365）",
         "買建単価（くりっく365/くりっく株365）",
-        "円貨スワップ損益",
-        "外貨スワップ損益",
-        "約定金額（円貨）",
-        "約定金額（外貨）",
-        "決済金額（円貨）",
-        "決済金額（外貨）",
-        "実現損益（円貨）",
-        "実現損益（外貨）",
-        "実現損益（円換算額）",
-        "受渡金額（円貨）",
-        "受渡金額（外貨）",
-        "備考",
+        "円貨スワップ損益", "外貨スワップ損益", "約定金額（円貨）",
+        "約定金額（外貨）", "決済金額（円貨）", "決済金額（外貨）",
+        "実現損益（円貨）", "実現損益（外貨）", "実現損益（円換算額）",
+        "受渡金額（円貨）", "受渡金額（外貨）", "備考",
     ];
 
-    let headers = rdr.headers().map_err(|e| e.to_string())?;
-    if headers.len() == expected_headers_dmm.len()
-        && headers
-            .iter()
-            .zip(expected_headers_dmm.iter())
-            .all(|(a, b)| a == *b)
-    {
-        println!("DMM形式のCSVです");
-        process_dmm_csv(db, rdr)?;
-    } else if headers.len() == expected_headers_gmo.len()
-        && headers
-            .iter()
-            .zip(expected_headers_gmo.iter())
-            .all(|(a, b)| a == *b)
-    {
-        println!("GMO形式のCSVです");
-        process_gmo_csv(db, rdr)?;
-    } else {
-        return Err("不明なCSVフォーマットです".to_string());
+    let mut detected_type: Option<AccountType> = None;
+
+    // ① 全 CSV の口座種別をチェック
+    for path in &csv_paths {
+        let file = File::open(path).map_err(|e| e.to_string())?;
+        let transcoded = DecodeReaderBytesBuilder::new()
+            .encoding(Some(SHIFT_JIS))
+            .build(file);
+
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(transcoded);
+
+        let headers = rdr.headers().map_err(|e| e.to_string())?;
+
+        // DMM 判定
+        let is_dmm =
+            headers.len() == expected_headers_dmm.len()
+                && headers.iter().zip(expected_headers_dmm.iter()).all(|(a, b)| a == *b);
+
+        // GMO 判定
+        let is_gmo =
+            headers.len() == expected_headers_gmo.len()
+                && headers.iter().zip(expected_headers_gmo.iter()).all(|(a, b)| a == *b);
+
+        let current = if is_dmm {
+            AccountType::Dmm
+        } else if is_gmo {
+            AccountType::Gmo
+        } else {
+            return Err(format!("不明なCSVフォーマットです: {}", path));
+        };
+
+        // 最初の CSV の口座種別を保存
+        if let Some(ref prev) = detected_type {
+            if prev != &current {
+                return Err("複数口座のCSVが混在しています。口座ごとに別々にインポートしてください".to_string());
+            }
+        } else {
+            detected_type = Some(current);
+        }
+    }
+
+    let account_type = detected_type.unwrap();
+
+    println!("a");
+
+    // ② 同一口座が判定されたので、まとめて処理
+    let mut all_records = Vec::new();
+    for path in csv_paths {
+        let file = File::open(&path).map_err(|e| e.to_string())?;
+        let transcoded = DecodeReaderBytesBuilder::new()
+            .encoding(Some(SHIFT_JIS))
+            .build(file);
+
+        let rdr = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(transcoded);
+
+        match account_type {
+            AccountType::Dmm => {
+                println!("DMM CSV: {}", path);
+                all_records.extend(process_dmm_csv(rdr)?);
+            }
+            AccountType::Gmo => {
+                println!("GMO CSV: {}", path);
+                all_records.extend(process_gmo_csv(rdr)?);
+            }
+        }
+    }
+
+    all_records.sort_by_key(|r| r.order_time);
+    insert_trade(db, all_records)?;
+
+    Ok(())
+}
+
+fn insert_trade(db: &DbState, records: Vec<Record>) -> Result<(), String> {
+    let mut positions = Vec::new();
+    for record in records{
+        match record.trade_type.as_str() {
+            "新規" => {
+                positions.push(record.clone());
+            }
+
+            // ペアになるポジションを探す
+            "決済" => {
+                let direction = if record.side == "買" { 1.0 } else { -1.0 };
+                let close_lot = record.lot;
+                let profit = record.profit.unwrap_or(0);
+                let swap = record.swap.unwrap_or(0);
+                let exit_rate = record.rate;
+
+                let expected_entry_rate =
+                    exit_rate + (profit - swap) as f64 / (close_lot * 10000.0) * direction;
+
+                if let Some((idx, _pos)) = positions
+                    .iter()
+                    .cloned()
+                    .enumerate()
+                    .find(|(_, pos)| {
+                        pos.pair == record.pair
+                            && pos.side != record.side
+                            && (pos.rate - expected_entry_rate).abs() < 0.00001
+                    })
+                {
+                    let mut pos = positions.remove(idx);
+
+                    let entry_rate = pos.rate;
+                    let entry_time = pos.order_time;
+                    let position_lot = pos.lot;
+
+                    let matched_lot = close_lot.min(position_lot);
+
+                    let profit_pips =
+                        ((entry_rate - exit_rate) * 1000.0 * direction).round() as i32;
+
+                    let trade = Trade {
+                        pair: record.pair.clone(),
+                        side: pos.side.clone(),
+                        lot: matched_lot,
+                        entry_rate,
+                        exit_rate,
+                        entry_time,
+                        exit_time: record.order_time,
+                        profit,
+                        profit_pips,
+                        swap: Some(swap),
+                        account: "DMM".to_string(),
+                        ..Default::default()
+                    };
+
+                    trades::insert_trade(db, trade)?;
+
+                    if position_lot > matched_lot {
+                        pos.lot = position_lot - matched_lot;
+                        positions.push(pos);
+                    }
+                } else {
+                    eprintln!("⚠ ペアになる建玉が見つからない決済: {:?}", record);
+                }
+            }
+
+            _ => {}
+        }
     }
 
     Ok(())
 }
 
 // DMM用の処理
-fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
-    // 売り・買いのポジションスタック（LIFO）
-    let mut buy_positions: Vec<Record> = Vec::new();
-    let mut sell_positions: Vec<Record> = Vec::new();
-
-    // CSV 全行を取得
-    let records: Vec<_> = rdr
+fn process_dmm_csv(mut rdr: csv::Reader<impl std::io::Read>) -> Result<Vec<Record>, String> {
+    let records_csv: Vec<_> = rdr
         .records()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
-    // 古い順に処理
-    for row in records.iter().rev() {
+    let mut records: Vec<Record> = Vec::new();
+    for row in records_csv.iter().rev() {
         let order_time_str = row.get(9).unwrap_or("").to_string();
         let order_time_unix = jst_str_to_unix(&order_time_str).unwrap_or(0);
 
@@ -150,91 +220,22 @@ fn process_dmm_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
             order_time: order_time_unix,
             ..Default::default()
         };
-
-        // DBに登録
-        records::insert_record(db, &record)?;
-
-        match record.trade_type.as_str() {
-            // --------------------------
-            // 新規注文 → スタックに push
-            // --------------------------
-            "新規" => {
-                if record.side == "買" {
-                    buy_positions.push(record.clone());
-                } else if record.side == "売" {
-                    sell_positions.push(record.clone());
-                }
-            }
-
-            // --------------------------
-            // 決済注文 → LIFO で処理
-            // --------------------------
-            "決済" => {
-                let stack = if record.side == "買" {
-                    &mut sell_positions // 売り建玉を LIFO で決済
-                } else {
-                    &mut buy_positions // 買い建玉を LIFO で決済
-                };
-
-                let mut remaining_lot = record.lot;
-
-                while remaining_lot > 0.0 {
-                    if let Some(mut entry) = stack.pop() {
-                        let close_lot = remaining_lot.min(entry.lot);
-                        let direction = if entry.side == "買" { 1.0 } else { -1.0 };
-                        let profit_pips =
-                            ((record.rate - entry.rate) * 1000.0 * direction).round() as i32;
-
-                        let trade = Trade {
-                            pair: record.pair.clone(),
-                            side: entry.side.clone(),
-                            lot: close_lot,
-                            entry_rate: entry.rate,
-                            exit_rate: record.rate,
-                            entry_time: entry.order_time,
-                            exit_time: record.order_time,
-                            profit: record.profit.unwrap_or(0),
-                            profit_pips,
-                            swap: record.swap,
-                            account: "DMM".to_string(),
-                            ..Default::default()
-                        };
-
-                        trades::insert_trade(db, trade)?;
-
-                        // 部分決済ならスタックに戻す
-                        if entry.lot > close_lot {
-                            entry.lot -= close_lot;
-                            stack.push(entry);
-                        }
-
-                        remaining_lot -= close_lot;
-                    } else {
-                        eprintln!("⚠ 決済に対応する建玉が見つかりません: {:?}", record);
-                        break;
-                    }
-                }
-            }
-
-            _ => {}
-        }
+        
+        records.push(record);
     }
 
-    Ok(())
+    Ok(records)
 }
 
 // GMO用の処理
-fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Result<(), String> {
-    // 売り・買いのポジションキュー
-    let mut buy_positions: VecDeque<Record> = VecDeque::new();
-    let mut sell_positions: VecDeque<Record> = VecDeque::new();
-
-    let records: Vec<_> = rdr
+fn process_gmo_csv(mut rdr: csv::Reader<impl std::io::Read>) -> Result<Vec<Record>, String> {
+    let records_csv: Vec<_> = rdr
         .records()
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| e.to_string())?;
 
-    for row in records.iter() {
+    let mut records: Vec<Record> = Vec::new();
+    for row in records_csv.iter().rev() {
         let trade_type_raw = row.get(1).unwrap_or("").trim();
         // "FXネオ新規" または "FXネオ決済" 以外ならスキップ
         let trade_type = match trade_type_raw {
@@ -258,69 +259,12 @@ fn process_gmo_csv(db: &DbState, mut rdr: csv::Reader<impl std::io::Read>) -> Re
             ..Default::default()
         };
 
-        // DBに登録
-        records::insert_record(db, &record)?;
-
-        match record.trade_type.as_str() {
-            "新規" => {
-                if record.side == "買" {
-                    buy_positions.push_back(record.clone());
-                } else if record.side == "売" {
-                    sell_positions.push_back(record.clone());
-                }
-            }
-            "決済" => {
-                let queue = if record.side == "買" {
-                    &mut sell_positions // 売りポジションの決済
-                } else {
-                    &mut buy_positions // 買いポジションの決済
-                };
-
-                let mut remaining_lot = record.lot;
-
-                while remaining_lot > 0.0 {
-                    if let Some(mut entry) = queue.pop_front() {
-                        let close_lot = remaining_lot.min(entry.lot);
-                        let direction = if entry.side == "買" { 1.0 } else { -1.0 };
-                        let profit_pips =
-                            ((record.rate - entry.rate) * 1000.0 * direction).round() as i32;
-
-                        let trade = Trade {
-                            pair: record.pair.clone(),
-                            side: entry.side.clone(),
-                            lot: close_lot,
-                            entry_rate: entry.rate,
-                            exit_rate: record.rate,
-                            entry_time: entry.order_time,
-                            exit_time: record.order_time,
-                            profit: record.profit.unwrap_or(0),
-                            profit_pips,
-                            swap: record.swap,
-                            account: "GMO".to_string(),
-                            ..Default::default()
-                        };
-
-                        trades::insert_trade(db, trade)?;
-
-                        // 部分決済の場合、残りロットを戻す
-                        if entry.lot > close_lot {
-                            entry.lot -= close_lot;
-                            queue.push_front(entry);
-                        }
-
-                        remaining_lot -= close_lot;
-                    } else {
-                        eprintln!("⚠ 決済に対応する建玉が見つかりません: {:?}", record);
-                        break;
-                    }
-                }
-            }
-            _ => {}
-        }
+        records.push(record);
     }
 
-    Ok(())
+    Ok(records)
 }
+
 
 fn parse_i32_from_csv(s: &str) -> Option<i32> {
     // trim & remove common noise: backslash, commas, currency symbols, whitespace
