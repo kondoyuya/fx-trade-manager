@@ -178,7 +178,17 @@ fn insert_trade(db: &DbState, records: Vec<Record>) -> Result<(), String> {
                         ..Default::default()
                     };
 
-                    trades::insert_trade(db, trade)?;
+                    trades::insert_trade(db, trade.clone())?;
+
+                    // マージ処理
+                    let similar = trades::find_similar_trades(db, trade.clone())?;
+
+                    if similar.len() >= 2{
+                        let mut ids = Vec::new();
+                        ids.extend(similar.iter().map(|t| t.id.unwrap_or(0) as i64));
+
+                        crate::service::trades::merge_trades(db, ids)?;
+                    }
 
                     if position_lot > matched_lot {
                         pos.lot = position_lot - matched_lot;
