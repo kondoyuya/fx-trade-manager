@@ -74,6 +74,47 @@ pub fn get_by_ids(state: &DbState, ids: Vec<i64>) -> Result<Vec<Trade>, String> 
     Ok(trades)
 }
 
+pub fn find_similar_trades(state: &DbState, trade: Trade) -> Result<Vec<Trade>, String> {
+    let state = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let sql = r#"
+        SELECT id, pair, side, lot, entry_rate, exit_rate,
+                entry_time, exit_time, profit, profit_pips, swap
+        FROM trades
+        WHERE pair = ?
+          AND side = ?
+          AND ABS(entry_time - ?) <= 1
+          AND ABS(exit_time - ?) <= 1
+          AND is_deleted = 0
+    "#;
+
+    let mut stmt = state.prepare(sql).map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([trade.pair, trade.side, trade.entry_time.to_string(), trade.exit_time.to_string()], |row| {
+            Ok(Trade {
+                id: row.get(0)?,
+                pair: row.get(1)?,
+                side: row.get(2)?,
+                lot: row.get(3)?,
+                entry_rate: row.get(4)?,
+                exit_rate: row.get(5)?,
+                entry_time: row.get(6)?,
+                exit_time: row.get(7)?,
+                profit: row.get(8)?,
+                profit_pips: row.get(9)?,
+                swap: row.get(10)?,
+                ..Default::default()
+            })
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut trades = Vec::new();
+    for r in rows {
+        trades.push(r.map_err(|e| e.to_string())?);
+    }
+    Ok(trades)
+}
+
 pub fn delete_by_ids(state: &DbState, ids: Vec<i64>) -> Result<(), String> {
     if ids.is_empty() {
         return Ok(());

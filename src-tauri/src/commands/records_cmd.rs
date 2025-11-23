@@ -10,9 +10,9 @@ use crate::models::service::trade_summary::TradeSummary;
 use tauri::State;
 
 #[tauri::command]
-pub fn insert_record(state: State<DbState>, csv_path: &str) -> Result<(), String> {
+pub fn insert_record(state: State<DbState>, csv_paths: Vec<String>) -> Result<(), String> {
     let db = &*state;
-    crate::service::import::import_csv_to_db(db, csv_path)
+    crate::service::import::import_csv_to_db(db, csv_paths)
 }
 
 #[tauri::command]
