@@ -8,10 +8,10 @@ import {
   IPrimitivePaneView,
   CandlestickSeries,
   CandlestickData,
+  LineSeries,
 } from 'lightweight-charts'
 import { invoke } from '@tauri-apps/api/core'
 import { LabelSelectPopup } from '../components/LabelSelectButton'
-import { UpdateOHLCButton } from '../components/UpdateOHLCButton'
 
 interface ChartViewProps {
   selectedTradeTime?: number | null
@@ -39,7 +39,9 @@ interface Trade {
   memo: string
 }
 
-// --- Primitive Classes ---
+/* -----------------------------
+      Primitive Classes
+--------------------------------*/
 class DebugPaneView implements IPrimitivePaneView {
   private readonly _primitive: DebugPrimitive
   constructor(primitive: DebugPrimitive) {
@@ -192,10 +194,13 @@ class DebugPrimitive implements ISeriesPrimitive<Time> {
 const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   const chartRef = useRef<ReturnType<typeof createChart> | null>(null)
   const candleSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null)
+  const maSeriesRef = useRef<ISeriesApi<'Line'> | null>(null)
   const primitiveRef = useRef<DebugPrimitive | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
 
   const [interval, setInterval] = useState<number>(60) // デフォルト 1分足
+  const [showMA, setShowMA] = useState<Boolean[]>([true, false, false])
+  const [maLength, setMALength] = useState<number[]>([20, 100, 300]);
   const [trades, setTrades] = useState<Trade[]>([])
   const [candles, setCandles] = useState<CandlestickData<Time>[]>([])
   const [visibleTrades, setVisibleTrades] = useState<Trade[]>([])
@@ -203,12 +208,23 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   const [showPopup, setShowPopup] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
 
+  const handleMAVisibleChange = (index: number, visible: boolean) => {
+    const next = [...showMA];
+    next[index] = visible;
+    setShowMA(next);
+  };
+
+  const handleMALengthChange = (index: number, length: number) => {
+    const next = [...maLength];
+    next[index] = length;
+    setMALength(next);
+  };
+
   const handleLabelClick = (trade: Trade) => {
     setSelectedTrade(trade)
     setShowPopup(true)
   }
 
-  // --- 指定時刻検索 ---
   const handleSearch = () => {
     if (!chartRef.current || !searchTime) return
     const closest = candles.reduce((prev, curr) =>
@@ -224,14 +240,32 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
     chartRef.current.timeScale().setVisibleRange({ from, to })
   }
 
-  // --- チャート再生成 ---
   useEffect(() => {
+    function calculateMovingAverageSeriesData(
+      candles: CandlestickData<Time>[],
+      length = 20,
+    ) {
+      const ma = []
+      let sum = 0
+      for (let i = 0; i < candles.length; i++) {
+        sum += candles[i].close
+        if (i + 1 < length) {
+          ma.push({ time: candles[i].time })
+        } else {
+          ma.push({ time: candles[i].time, value: sum / length })
+          sum -= candles[i + 1 - length].close
+        }
+      }
+      return ma
+    }
+
     async function fetchAndRender() {
       // 既存チャート破棄
       if (chartRef.current) {
         chartRef.current.remove()
         chartRef.current = null
         candleSeriesRef.current = null
+        maSeriesRef.current = null
         primitiveRef.current = null
       }
       if (!chartContainerRef.current) return
@@ -261,8 +295,9 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
 
       // ローソク足取得
       try {
-        const candles: Candle[] = await invoke('get_candles', { interval })
-        const formatted = candles.map((c) => ({
+        await invoke<string>('fetch_and_update_ohlc')
+        const result: Candle[] = await invoke('get_candles', { interval })
+        const formatted = result.map((c) => ({
           time: (c.time + 3600 * 9) as Time,
           open: c.open,
           high: c.high,
@@ -272,10 +307,27 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
         series.setData(formatted)
         setCandles(formatted)
 
+        let color = ['#2962FF', '#ff0000', '#008000'];
+        for (let i = 0; i < showMA.length; i++) {
+          if (showMA[i]) {
+            const maData = calculateMovingAverageSeriesData(formatted, maLength[i])
+            const maSeries = chart.addSeries(LineSeries, {
+              color: color[i],
+              lineWidth: 1,
+            })
+            maSeries.setData(maData)
+            maSeriesRef.current = maSeries
+          }
+      }
+
         // 初期表示
+        let initialSearchTime = -1
+        if (selectedTradeTime) {
+          initialSearchTime = selectedTradeTime + 3600 * 9
+        }
+
         if (initialSearchTime >= 0) {
-          console.log("a")
-          const closest = candles.reduce((prev, curr) =>
+          const closest = formatted.reduce((prev, curr) =>
             Math.abs((curr.time as number) - initialSearchTime) <
             Math.abs((prev.time as number) - initialSearchTime)
               ? curr
@@ -286,7 +338,6 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
           const to = ((closest.time as number) + rangeSize * interval) as Time
           chart.timeScale().setVisibleRange({ from, to })
         } else {
-          console.log("b")
           const times = formatted.map((c) => c.time as number)
           const to = times[times.length - 1] as Time
           const from = times[Math.max(0, times.length - 100)] as Time
@@ -306,17 +357,10 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
       }
     }
 
-    // React の state 更新は非同期なのでsearchTimeを即座に参照できない
-    let initialSearchTime = -1
-    if (selectedTradeTime) {
-      initialSearchTime = selectedTradeTime + 3600 * 9
-      setSearchTime(initialSearchTime);
-    }
     fetchAndRender()
+  }, [interval, showMA])
 
-  }, [interval])
 
-  // --- 可視範囲内トレード更新 ---
   useEffect(() => {
     const chart = chartRef.current
     if (!chart || trades.length === 0) return
@@ -346,16 +390,20 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   return (
     <div className="flex flex-col items-center mt-4 space-y-4">
       <div className="flex items-center space-x-2">
-      <input
-        type="datetime-local"
-        value={searchTime ? new Date(searchTime * 1000).toISOString().slice(0,16) : ''}
-        onChange={(e) => {
-          const date = new Date(e.target.value)
-          const unixTime = Math.floor(date.getTime() / 1000) + 3600 * 9
-          setSearchTime(unixTime)
-        }}
-        className="border rounded p-1"
-      />
+        <input
+          type="datetime-local"
+          value={
+            searchTime
+              ? new Date(searchTime * 1000).toISOString().slice(0, 16)
+              : ''
+          }
+          onChange={(e) => {
+            const date = new Date(e.target.value)
+            const unix = Math.floor(date.getTime() / 1000) + 3600 * 9
+            setSearchTime(unix)
+          }}
+          className="border rounded p-1"
+        />
         <button
           onClick={handleSearch}
           className="bg-blue-500 text-white px-3 py-1 rounded"
@@ -375,8 +423,26 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
           <option value={14400}>4時間足</option>
           <option value={86400}>日足</option>
         </select>
+      </div>
 
-        <UpdateOHLCButton />
+      <div className="flex space-x-4 my-2">
+        {showMA.map((visible, i) => (
+          <div key={i} className="flex items-center space-x-1">
+            <input
+              type="checkbox"
+              checked={visible}
+              onChange={(e) => handleMAVisibleChange(i, e.target.checked)}
+            />
+            <span>MA{i + 1}</span>
+            <input
+              type="number"
+              value={maLength[i]}
+              min={1}
+              onChange={(e) => handleMALengthChange(i, Number(e.target.value))}
+              className="border w-16 p-1 rounded"
+            />
+          </div>
+        ))}
       </div>
 
       <div
@@ -384,6 +450,7 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
         style={{ width: '800px', height: '600px' }}
       />
 
+      {/* トレード表 */}
       <div className="w-[800px] mt-4 border p-2 rounded bg-gray-50">
         <h2 className="font-bold mb-2">現在画面内のトレード</h2>
         {visibleTrades.length === 0 ? (
@@ -408,7 +475,9 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
                   <td className="p-1 text-center">{t.id}</td>
                   <td className="p-1 text-center">{t.pair}</td>
                   <td
-                    className={`p-1 text-center ${t.side === '買' ? 'text-red-600' : 'text-blue-600'}`}
+                    className={`p-1 text-center ${
+                      t.side === '買' ? 'text-red-600' : 'text-blue-600'
+                    }`}
                   >
                     {t.side}
                   </td>
@@ -420,7 +489,9 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
                     {new Date(t.exit_time * 1000).toLocaleString()}
                   </td>
                   <td
-                    className={`p-1 text-right ${t.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}
+                    className={`p-1 text-right ${
+                      t.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
                   >
                     {t.profit.toFixed(0)}
                   </td>
