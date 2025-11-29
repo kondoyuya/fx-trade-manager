@@ -16,6 +16,7 @@ from flask import Flask, request, jsonify
 import MetaTrader5 as mt5
 from datetime import datetime, timedelta
 import pytz
+import time
 
 app = Flask(__name__)
 
@@ -23,18 +24,16 @@ if not mt5.initialize():
     print("MT5 initialize failed")
     exit()
 
+def is_helsinki_dst(unix_timestamp: int) -> bool:
+    utc_dt = datetime.fromtimestamp(unix_timestamp, tz=pytz.utc)
 
-# ---- Europe/Helsinkiの夏時間/冬時間の判定に基づき、UnixTimeを調整する ----
+    helsinki_tz = pytz.timezone('Europe/Helsinki')
+
+    helsinki_dt = utc_dt.astimezone(helsinki_tz)
+    return helsinki_dt.dst() != timedelta(0)
+
 def broker_to_utc_unixtime(broker_ts: int) -> int:
-    TARGET_TIMEZONE = 'Europe/Helsinki'
-    helsinki_tz = pytz.timezone(TARGET_TIMEZONE)
-    
-    utc_dt = datetime.fromtimestamp(broker_ts, pytz.utc)
-    local_dt = utc_dt.astimezone(helsinki_tz)
-    
-    is_dst = local_dt.dst() != timedelta(0)
-    
-    if is_dst:
+    if is_helsinki_dst(broker_ts):
         adjustment = timedelta(hours=-3)
     else:
         adjustment = timedelta(hours=-2)
@@ -93,6 +92,42 @@ def get_ohlc():
 
     return jsonify(result)
 
+@app.route("/get_ticks")
+def get_ticks():
+    from_time = int(request.args.get("since", 0)) - 3600 * 24
+    to_time = from_time + 3600 * 10
+
+    current_unix_time = int(time.time())
+
+    all_ticks = []
+    while True:
+        ticks = mt5.copy_ticks_range("USDJPY", from_time, to_time, mt5.COPY_TICKS_ALL)
+        print(len(ticks))
+
+        # レスポンスの時刻はヨーロッパ時刻で渡される
+        for t in ticks:
+            utc_time = broker_to_utc_unixtime(int(t['time']))
+            utc_time_msc = utc_time * 1000 + (int(t['time_msc']) % 1000)
+
+            all_ticks.append({
+                "time": int(utc_time),
+                "time_msc": int(utc_time_msc),
+                "bid": float(t["bid"]),
+                "ask": float(t["ask"]),
+                "pair": "USDJPY"
+            })
+        
+        if current_unix_time + 3600 * 24 < to_time :
+            break
+
+        from_time += 3600 * 10
+        to_time += 3600 * 10
+
+
+    unique = {tick["time_msc"]: tick for tick in all_ticks}
+    sorted_ticks = sorted(unique.values(), key=lambda x: x["time_msc"])
+
+    return jsonify(sorted_ticks)
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5000)

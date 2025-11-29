@@ -12,6 +12,7 @@ import {
 } from 'lightweight-charts'
 import { invoke } from '@tauri-apps/api/core'
 import { LabelSelectPopup } from '../components/LabelSelectButton'
+import { UpdateTickButton } from './UpdateTickButton'
 
 interface ChartViewProps {
   selectedTradeTime?: number | null
@@ -423,6 +424,8 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
           <option value={14400}>4時間足</option>
           <option value={86400}>日足</option>
         </select>
+
+        <UpdateTickButton/>
       </div>
 
       <div className="flex space-x-4 my-2">

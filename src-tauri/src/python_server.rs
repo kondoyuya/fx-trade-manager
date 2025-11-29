@@ -15,14 +15,26 @@ pub fn start_python_server() -> Result<Child, String> {
 
     // Python サーバー起動
     #[cfg(windows)]
-    // Windows起動時にコンソールを開かないようにする
-    let child = Command::new(&server_exe)
-        .arg(&server_exe)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .creation_flags(0x08000000)
-        .spawn()
-        .map_err(|e| format!("Failed to start Python server: {}", e))?;
+    let child = {
+        let mut cmd = Command::new(&server_exe);
+        #[cfg(debug_assertions)]
+        {
+            cmd.arg(&server_exe)
+                .stdout(Stdio::inherit()) 
+                .stderr(Stdio::inherit()); 
+            cmd.spawn().map_err(|e| format!("Failed to start Python server: {}", e))?
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            cmd.arg(&server_exe)
+                .stdout(Stdio::piped())
+                .stderr(Stdio::piped())
+                .creation_flags(0x08000000)
+                .spawn()
+                .map_err(|e| format!("Failed to start Python server: {}", e))?
+        }
+    };
 
     #[cfg(not(windows))]
     let child = Command::new(&server_exe)
@@ -31,7 +43,6 @@ pub fn start_python_server() -> Result<Child, String> {
         .stderr(Stdio::piped())
         .spawn()
         .map_err(|e| format!("Failed to start Python server: {}", e))?;
-
-    println!("Python server started (pid = {})", child.id());
+        println!("Python server started (pid = {})", child.id());
     Ok(child)
 }
