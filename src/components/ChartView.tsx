@@ -12,6 +12,8 @@ import {
 } from 'lightweight-charts'
 import { invoke } from '@tauri-apps/api/core'
 import { LabelSelectPopup } from '../components/LabelSelectButton'
+import { UpdateTickButton } from './UpdateTickButton'
+import { TickChart } from './TickChart'
 
 interface ChartViewProps {
   selectedTradeTime?: number | null
@@ -204,7 +206,7 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   const [trades, setTrades] = useState<Trade[]>([])
   const [candles, setCandles] = useState<CandlestickData<Time>[]>([])
   const [visibleTrades, setVisibleTrades] = useState<Trade[]>([])
-  const [searchTime, setSearchTime] = useState<number>()
+  const [searchTime, setSearchTime] = useState<number>(Date.now()/1000/60*60 + 3600*9)
   const [showPopup, setShowPopup] = useState(false)
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
 
@@ -318,12 +320,13 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
             maSeries.setData(maData)
             maSeriesRef.current = maSeries
           }
-      }
+        }
 
         // 初期表示
         let initialSearchTime = -1
         if (selectedTradeTime) {
           initialSearchTime = selectedTradeTime + 3600 * 9
+          setSearchTime(initialSearchTime)
         }
 
         if (initialSearchTime >= 0) {
@@ -388,133 +391,151 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
   }, [trades])
 
   return (
-    <div className="flex flex-col items-center mt-4 space-y-4">
-      <div className="flex items-center space-x-2">
-        <input
-          type="datetime-local"
-          value={
-            searchTime
-              ? new Date(searchTime * 1000).toISOString().slice(0, 16)
-              : ''
-          }
-          onChange={(e) => {
-            const date = new Date(e.target.value)
-            const unix = Math.floor(date.getTime() / 1000) + 3600 * 9
-            setSearchTime(unix)
-          }}
-          className="border rounded p-1"
-        />
-        <button
-          onClick={handleSearch}
-          className="bg-blue-500 text-white px-3 py-1 rounded"
-        >
-          検索
-        </button>
+    <div className="flex flex-row w-full mt-4 space-x-4">
 
-        <select
-          value={interval}
-          onChange={(e) => setInterval(Number(e.target.value))}
-          className="border rounded p-1"
-        >
-          <option value={60}>1分足</option>
-          <option value={300}>5分足</option>
-          <option value={900}>15分足</option>
-          <option value={3600}>1時間足</option>
-          <option value={14400}>4時間足</option>
-          <option value={86400}>日足</option>
-        </select>
-      </div>
-
-      <div className="flex space-x-4 my-2">
-        {showMA.map((visible, i) => (
-          <div key={i} className="flex items-center space-x-1">
-            <input
-              type="checkbox"
-              checked={visible as boolean}
-              onChange={(e) => handleMAVisibleChange(i, e.target.checked)}
-            />
-            <span>MA{i + 1}</span>
-            <input
-              type="number"
-              value={maLength[i]}
-              min={1}
-              onChange={(e) => handleMALengthChange(i, Number(e.target.value))}
-              className="border w-16 p-1 rounded"
-            />
-          </div>
-        ))}
-      </div>
-
-      <div
-        ref={chartContainerRef}
-        style={{ width: '800px', height: '600px' }}
-      />
-
-      {/* トレード表 */}
-      <div className="w-[800px] mt-4 border p-2 rounded bg-gray-50">
-        <h2 className="font-bold mb-2">現在画面内のトレード</h2>
-        {visibleTrades.length === 0 ? (
-          <p className="text-gray-500">表示範囲内にトレードはありません。</p>
-        ) : (
-          <table className="w-full text-sm border-collapse">
-            <thead>
-              <tr className="border-b bg-gray-200">
-                <th className="p-1">#</th>
-                <th className="p-1">通貨ペア</th>
-                <th className="p-1">売買</th>
-                <th className="p-1">Lot</th>
-                <th className="p-1">Entry</th>
-                <th className="p-1">Exit</th>
-                <th className="p-1">損益</th>
-                <th className="p-1">操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleTrades.map((t) => (
-                <tr key={t.id} className="border-b">
-                  <td className="p-1 text-center">{t.id}</td>
-                  <td className="p-1 text-center">{t.pair}</td>
-                  <td
-                    className={`p-1 text-center ${
-                      t.side === '買' ? 'text-red-600' : 'text-blue-600'
-                    }`}
-                  >
-                    {t.side}
-                  </td>
-                  <td className="p-1 text-right">{t.lot}</td>
-                  <td className="p-1 text-right">
-                    {new Date(t.entry_time * 1000).toLocaleString()}
-                  </td>
-                  <td className="p-1 text-right">
-                    {new Date(t.exit_time * 1000).toLocaleString()}
-                  </td>
-                  <td
-                    className={`p-1 text-right ${
-                      t.profit >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {t.profit.toFixed(0)}
-                  </td>
-                  <td className="p-1 text-center">
-                    <button
-                      onClick={() => handleLabelClick(t)}
-                      className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
-                    >
-                      ラベル登録
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-
-        {showPopup && selectedTrade && (
-          <LabelSelectPopup
-            trade={selectedTrade}
-            onClose={() => setShowPopup(false)}
+      {/* ---------------- 左カラム（チャート2つを縦並び） ---------------- */}
+      <div className="flex flex-col items-center space-y-4" style={{ width: '820px' }}>
+        
+        {/* 検索・インターバルなどの上部 UI */}
+        <div className="flex items-center space-x-2">
+          <input
+            type="datetime-local"
+            value={
+              searchTime
+                ? new Date(searchTime * 1000).toISOString().slice(0, 16)
+                : ''
+            }
+            onChange={(e) => {
+              const date = new Date(e.target.value)
+              const unix = Math.floor(date.getTime() / 1000) + 3600 * 9
+              setSearchTime(unix)
+            }}
+            className="border rounded p-1"
           />
-        )}
+          <button
+            onClick={handleSearch}
+            className="bg-blue-500 text-white px-3 py-1 rounded"
+          >
+            検索
+          </button>
+
+          <select
+            value={interval}
+            onChange={(e) => setInterval(Number(e.target.value))}
+            className="border rounded p-1"
+          >
+            <option value={60}>1分足</option>
+            <option value={300}>5分足</option>
+            <option value={900}>15分足</option>
+            <option value={3600}>1時間足</option>
+            <option value={14400}>4時間足</option>
+            <option value={86400}>日足</option>
+          </select>
+
+          <UpdateTickButton />
+        </div>
+
+        {/* MA チェックボックス行 */}
+        <div className="flex space-x-4 my-2">
+          {showMA.map((visible, i) => (
+            <div key={i} className="flex items-center space-x-1">
+              <input
+                type="checkbox"
+                checked={visible as boolean}
+                onChange={(e) => handleMAVisibleChange(i, e.target.checked)}
+              />
+              <span>MA{i + 1}</span>
+              <input
+                type="number"
+                value={maLength[i]}
+                min={1}
+                onChange={(e) => handleMALengthChange(i, Number(e.target.value))}
+                className="border w-16 p-1 rounded"
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* ローソク足チャート */}
+        <div
+          ref={chartContainerRef}
+          style={{ width: '800px', height: '600px' }}
+        />
+
+        {/* ↓ TickChart をローソク足チャートの下に縦並び配置 */}
+        <TickChart
+          center={searchTime ? (searchTime * 1000) : 0}
+        />
+      </div>
+
+      {/* ---------------- 右カラム（トレード一覧） ---------------- */}
+      <div className="flex-1">
+        <div className="w-full border p-2 rounded bg-gray-50">
+          <h2 className="font-bold mb-2">現在画面内のトレード</h2>
+
+          {visibleTrades.length === 0 ? (
+            <p className="text-gray-500">表示範囲内にトレードはありません。</p>
+          ) : (
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b bg-gray-200">
+                  <th className="p-1">#</th>
+                  <th className="p-1">通貨ペア</th>
+                  <th className="p-1">売買</th>
+                  <th className="p-1">Lot</th>
+                  <th className="p-1">Entry</th>
+                  <th className="p-1">Exit</th>
+                  <th className="p-1">損益</th>
+                  <th className="p-1">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visibleTrades.map((t) => (
+                  <tr key={t.id} className="border-b">
+                    <td className="p-1 text-center">{t.id}</td>
+                    <td className="p-1 text-center">{t.pair}</td>
+                    <td
+                      className={`p-1 text-center ${
+                        t.side === '買' ? 'text-red-600' : 'text-blue-600'
+                      }`}
+                    >
+                      {t.side}
+                    </td>
+                    <td className="p-1 text-right">{t.lot}</td>
+                    <td className="p-1 text-right">
+                      {new Date(t.entry_time * 1000).toLocaleString()}
+                    </td>
+                    <td className="p-1 text-right">
+                      {new Date(t.exit_time * 1000).toLocaleString()}
+                    </td>
+                    <td
+                      className={`p-1 text-right ${
+                        t.profit >= 0 ? 'text-green-600' : 'text-red-600'
+                      }`}
+                    >
+                      {t.profit.toFixed(0)}
+                    </td>
+                    <td className="p-1 text-center">
+                      <button
+                        onClick={() => handleLabelClick(t)}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+                      >
+                        ラベル登録
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {showPopup && selectedTrade && (
+            <LabelSelectPopup
+              trade={selectedTrade}
+              onClose={() => setShowPopup(false)}
+            />
+          )}
+        </div>
       </div>
     </div>
   )

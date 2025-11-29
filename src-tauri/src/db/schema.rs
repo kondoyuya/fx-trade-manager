@@ -41,6 +41,24 @@ pub const TABLES: &[&str] = &[
         UNIQUE(pair, time)
     )
     "#,
+    r#"
+    CREATE INDEX IF NOT EXISTS idx_candles_time ON candles(time);
+    "#,
+    r#"
+    CREATE TABLE IF NOT EXISTS ticks(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pair TEXT NOT NULL,
+        time INTEGER NOT NULL,  -- UNIXTIMEで管理
+        time_msc INTEGER NOT NULL,
+        bid REAL NOT NULL,
+        ask REAL NOT NULL,
+        UNIQUE(pair, time_msc)
+    )
+    "#,
+    r#"
+    CREATE INDEX IF NOT EXISTS idx_ticks_time ON ticks(time);
+    CREATE INDEX IF NOT EXISTS idx_ticks_time_msc ON ticks(time_msc);
+    "#,
     // 注文・決済のペアで管理する
     r#"
     CREATE TABLE IF NOT EXISTS trades(
