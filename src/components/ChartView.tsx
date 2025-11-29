@@ -430,7 +430,7 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
           <div key={i} className="flex items-center space-x-1">
             <input
               type="checkbox"
-              checked={visible}
+              checked={visible as boolean}
               onChange={(e) => handleMAVisibleChange(i, e.target.checked)}
             />
             <span>MA{i + 1}</span>
