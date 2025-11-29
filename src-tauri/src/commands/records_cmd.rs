@@ -2,6 +2,7 @@ use crate::db::DbState;
 use crate::models::db::candle::Candle;
 use crate::models::db::label::Label;
 use crate::models::db::record::Record;
+use crate::models::db::tick::Tick;
 use crate::models::db::trade::Trade;
 use crate::models::filter::trade_filter::TradeFilter;
 use crate::models::service::daily_summary::DailySummary;
@@ -113,4 +114,10 @@ pub fn get_filtered_trades_summary(
 pub fn merge_trades(state: State<DbState>, ids: Vec<i64>) -> Result<(), String> {
     let db = &*state;
     crate::service::trades::merge_trades(db, ids)
+}
+
+#[tauri::command]
+pub fn get_ticks(state: State<DbState>, from: i64, to: i64) -> Result<Vec<Tick>, String> {
+    let db = &*state;
+    crate::service::ticks::fetch_ticks(db, from, to)
 }

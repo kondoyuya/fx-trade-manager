@@ -48,3 +48,35 @@ pub fn insert_ticks_bulk(state: &DbState, ticks: &Vec<Tick>) -> Result<(), Strin
     tx.commit().map_err(|e| e.to_string())?;
     Ok(())
 }
+
+pub fn find_tick_from_unixtime(state: &DbState, from: i64, to: i64) -> Result<Vec<Tick>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+
+    let sql = r#"
+        SELECT pair, time, time_msc, bid, ask
+        FROM ticks
+        WHERE time_msc BETWEEN ?1 AND ?2
+        ORDER BY time_msc ASC
+    "#;
+
+    let mut stmt = conn.prepare(sql).map_err(|e| format!("prepare error: {}", e))?;
+    let rows = stmt
+        .query_map(params![from, to], |row| {
+            Ok(Tick {
+                pair: row.get(0)?,
+                time: row.get(1)?,
+                time_msc: row.get(2)?,
+                bid: row.get(3)?,
+                ask: row.get(4)?,
+            })
+        })
+        .map_err(|e| format!("query_map error: {}", e))?;
+
+    let mut ticks: Vec<Tick> = Vec::new();
+    for row_result in rows {
+        let tick = row_result.map_err(|e| format!("row error: {}", e))?;
+        ticks.push(tick);
+    }
+
+    Ok(ticks)
+}
