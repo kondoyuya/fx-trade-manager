@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Trade } from '../types'
 import { formatProfit } from './format/Profit'
 import { invoke } from '@tauri-apps/api/core'
+import { AddLabelButton } from './AddLabelButton'
 
 type TradeTableProps = {
   trades: Trade[]
@@ -68,8 +69,9 @@ export const TradeTable: React.FC<TradeTableProps> = ({
       >
         選択トレードをマージ
       </button>
+      <AddLabelButton/>
       <table className="min-w-full text-sm table-auto border-collapse">
-        <thead className="bg-gray-100 sticky top-0 z-10">
+        <thead className="bg-gray-100  top-0 z-10">
           <tr>
             <th className="px-2 py-1 border-b text-center">選択</th>
             <th className="px-2 py-1 border-b text-center">#</th>
@@ -93,11 +95,12 @@ export const TradeTable: React.FC<TradeTableProps> = ({
               className="cursor-pointer hover:bg-gray-200"
             >
               <td className="px-2 py-1 text-center">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(t.id)}
-                  onChange={() => toggleSelect(t.id)}
-                />
+              <input
+                type="checkbox"
+                checked={selectedIds.has(t.id)}
+                onClick={(e) => e.stopPropagation()}
+                onChange={() => toggleSelect(t.id)}
+              />
               </td>
               <td className="px-2 py-1 text-center">{t.id}</td>
               <td className="px-2 py-1 text-center">{t.pair}</td>
@@ -122,7 +125,10 @@ export const TradeTable: React.FC<TradeTableProps> = ({
               </td>
               <td className="px-2 py-1 text-center">
                 <button
-                  onClick={() => onLabelClick(t)}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onLabelClick(t)
+                  }}
                   className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600 transition-colors"
                 >
                   ラベル登録
