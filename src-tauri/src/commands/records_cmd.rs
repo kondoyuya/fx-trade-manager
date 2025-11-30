@@ -121,3 +121,15 @@ pub fn get_ticks(state: State<DbState>, from: i64, to: i64) -> Result<Vec<Tick>,
     let db = &*state;
     crate::service::ticks::fetch_ticks(db, from, to)
 }
+
+#[tauri::command]
+pub fn upsert_daily_memo(state: State<DbState>, date: String, memo: String) -> Result<(), String> {
+    let db = &*state;
+    crate::service::daily_memo::upsert_daily_memo(db, &date, &memo)
+}
+
+#[tauri::command]
+pub fn get_daily_memo(state: State<DbState>, date: String) -> Result<String, String> {
+    let db = &*state;
+    crate::service::daily_memo::get_daily_memo(db, &date)
+}

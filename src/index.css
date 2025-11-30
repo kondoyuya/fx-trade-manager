@@ -18,6 +18,4 @@
   line-height: 1.2;
 }
 
-.hidden-tile {
-  visibility: hidden;
-}
+.hidden-tile { visibility: hidden; }

@@ -94,6 +94,13 @@ pub const TABLES: &[&str] = &[
     )
     "#,
     r#"
+    CREATE TABLE IF NOT EXISTS daily_memo(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        date TEXT NOT NULL UNIQUE,
+        memo TEXT
+    )
+    "#,
+    r#"
     CREATE TABLE IF NOT EXISTS meta (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL

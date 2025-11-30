@@ -7,6 +7,7 @@ import { LabelSelectPopup } from '../components/LabelSelectButton'
 import { UpdateMemoButton } from '../components/UpdateMemoButton'
 import { DisplayModeToggle } from '../components/DisplayModeToggle'
 import { TradeTable } from '../components/TradeTable'
+import { TradeDaily } from '../components/TradeDaily'
 import { TradeSummaryView } from '../components/TradeSummaryView'
 import { formatProfit } from './format/Profit'
 
@@ -76,60 +77,54 @@ const CalendarView: React.FC = () => {
 
       <div className="flex space-x-4">
         {/* 左：カレンダー */}
-        <div className="flex-shrink-0">
-        <Calendar
-          onClickDay={(value) => setSelectedDate(value)}
-          onActiveStartDateChange={({ activeStartDate }) =>
-            setActiveMonth(activeStartDate!)
-          }
-          tileDisabled={({ date, view }) => {
-            if (view !== 'month') return false
-            return date.getMonth() !== activeMonth.getMonth()
-          }}
-          tileClassName={({ date, view }) => {
-            if (view === 'month' && date.getMonth() !== activeMonth.getMonth()) {
-              return 'hidden-tile'
+        <div className="relative">
+          <Calendar
+            showFixedNumberOfWeeks={true} 
+            calendarType="gregory"
+            onClickDay={(value) => setSelectedDate(value)}
+            onActiveStartDateChange={({ activeStartDate }) =>
+              setActiveMonth(activeStartDate!)
             }
-            return ''
-          }}
-          tileContent={({ date }) => {
-            const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-            const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, '0')}-${String(jst.getDate()).padStart(2, '0')}`
-            const summary = summaries.find((s) => s.date === dateStr)?.summary
-            if (!summary) return null
+            tileDisabled={({ date, view }) => {
+              if (view !== 'month') return false
+              return date.getMonth() !== activeMonth.getMonth()
+            }}
+            tileClassName={({ date, view }) => {
+              if (view === 'month' && date.getMonth() !== activeMonth.getMonth()) {
+                return 'hidden-tile'
+              }
+              return ''
+            }}
+            tileContent={({ date }) => {
+              const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+              const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2,'0')}-${String(jst.getDate()).padStart(2,'0')}`
+              const summary = summaries.find((s) => s.date === dateStr)?.summary
+              if (!summary) return null
 
-            const profit =
-              displayMode === '円' ? summary.profit : summary.profit_pips / 10
+              const profit =
+                displayMode === '円' ? summary.profit : summary.profit_pips / 10
+              const color =
+                profit > 0 ? 'text-blue-600' : profit < 0 ? 'text-red-600' : 'text-gray-400'
 
-            const color =
-              profit > 0
-                ? 'text-blue-600'
-                : profit < 0
-                  ? 'text-red-600'
-                  : 'text-gray-400'
+              return (
+                <p className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}>
+                  {(profit > 0 ? '+' : '') + profit.toFixed(displayMode === '円' ? 0 : 1)}
+                </p>
+              )
+            }}
+          />
 
-            return (
-              <p className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}>
-                {(profit > 0 ? '+' : '') +
-                  profit.toFixed(displayMode === '円' ? 0 : 1)}
-              </p>
-            )
-          }}
-        />
-
-          <div className="mt-4 p-2 border rounded bg-gray-50">
-            <h3 className="font-bold mb-1">
-              {activeMonth.getFullYear()}年{activeMonth.getMonth() + 1}月の収支
-            </h3>
-
-            <td className="text-right font-semibold">
-              {formatProfit(displayMode, monthly.yen, monthly.pips)}
-            </td>
+        {/* 月次収支タイル */}
+        <div className="absolute left-[25%] top-[87%] w-[50%] flex justify-center">
+          <div className="text-white border-2 border-blue-600 font-bold w-35 h-10 rounded-full px-2 py-1 text-sm flex justify-center items-center shadow-lg">
+            {formatProfit(displayMode, monthly.yen, monthly.pips)}
           </div>
         </div>
 
+        </div>
+
         {/* 右：日付詳細 + トレード一覧 */}
-        <div className="flex-1 max-h-[600px] overflow-y-auto border rounded p-2">
+        <div className="flex-1 max-h-[570px] overflow-y-auto border rounded p-2">
           <h2 className="font-bold mb-2">
             {selectedDate.toLocaleDateString()} の詳細
           </h2>
@@ -150,6 +145,8 @@ const CalendarView: React.FC = () => {
           />
         </div>
       </div>
+
+      <TradeDaily selectedDate={selectedDate} />
 
       {/* ラベル登録ポップアップ */}
       {showPopup && selectedTrade && (
