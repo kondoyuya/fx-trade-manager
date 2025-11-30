@@ -28,6 +28,8 @@ export const TradeList: React.FC = () => {
     minHoldingTime: '00:00:00',
     maxHoldingEnabled: false,
     maxHoldingTime: '00:00:00',
+    selectedLabelIds: [],
+    labelEnabled: false,
   })
 
   const fetchTrades = async () => {
@@ -45,6 +47,9 @@ export const TradeList: React.FC = () => {
         filter.max_holding_time = parseTimeToSeconds(
           filterValues.maxHoldingTime,
         )
+      if (filterValues.labelEnabled) {
+        filter.label_ids = filterValues.selectedLabelIds
+      }
 
       const result = await invoke<TradeSummary>('get_filtered_trades_summary', {
         filter,

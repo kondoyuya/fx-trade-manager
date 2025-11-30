@@ -300,6 +300,29 @@ pub fn get_by_filter(state: &DbState, filter: TradeFilter) -> Result<Vec<Trade>,
         params_vec.push(Box::new(max_holding));
     }
 
+    // ラベルでのフィルター
+    if let Some(label_ids) = filter.label_ids {
+        if !label_ids.is_empty() {
+            let placeholders = label_ids
+                .iter()
+                .map(|_| "?".to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+
+            query.push_str(&format!(
+                " AND id IN (
+                    SELECT trade_id FROM trade_labels
+                    WHERE label_id IN ({})
+                )",
+                placeholders
+            ));
+
+            for id in label_ids {
+                params_vec.push(Box::new(id));
+            }
+        }
+    }
+
     query.push_str(" ORDER BY exit_time DESC");
     println!("{}", query);
 
