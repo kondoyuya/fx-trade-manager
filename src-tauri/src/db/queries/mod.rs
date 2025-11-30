@@ -5,3 +5,4 @@ pub mod records;
 pub mod trade_label;
 pub mod trades;
 pub mod ticks;
+pub mod daily_memo;

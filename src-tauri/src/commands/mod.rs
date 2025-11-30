@@ -25,6 +25,8 @@ macro_rules! register_commands {
             crate::commands::records_cmd::get_filtered_trades_summary,
             crate::commands::records_cmd::merge_trades,
             crate::commands::records_cmd::get_ticks,
+            crate::commands::records_cmd::upsert_daily_memo,
+            crate::commands::records_cmd::get_daily_memo,
         ])
     };
 }
