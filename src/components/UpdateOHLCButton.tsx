@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 
-export const UpdateTickButton = () => {
+export const  UpdateOHLCButton = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleClick = async () => {
     setIsLoading(true);
 
     try {
-      await invoke<string>('fetch_and_update_tick');
+      await invoke<string>('fetch_and_update_ohlc');
       alert('更新に成功しました');
     } catch (err) {
       console.error(err);
@@ -58,7 +58,7 @@ export const UpdateTickButton = () => {
               更新中...
             </>
           )
-          : '最新のtickを取得'
+          : '最新のチャートを取得'
       }
     </button>
   );

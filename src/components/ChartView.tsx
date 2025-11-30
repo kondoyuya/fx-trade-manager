@@ -13,6 +13,7 @@ import {
 import { invoke } from '@tauri-apps/api/core'
 import { LabelSelectPopup } from '../components/LabelSelectButton'
 import { UpdateTickButton } from './UpdateTickButton'
+import { UpdateOHLCButton } from './UpdateOHLCButton'
 import { TickChart } from './TickChart'
 
 interface ChartViewProps {
@@ -297,7 +298,6 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
 
       // ローソク足取得
       try {
-        await invoke<string>('fetch_and_update_ohlc')
         const result: Candle[] = await invoke('get_candles', { interval })
         const formatted = result.map((c) => ({
           time: (c.time + 3600 * 9) as Time,
@@ -432,6 +432,7 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
             <option value={86400}>日足</option>
           </select>
 
+          <UpdateOHLCButton />
           <UpdateTickButton />
         </div>
 

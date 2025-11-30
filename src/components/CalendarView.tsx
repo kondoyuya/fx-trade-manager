@@ -77,37 +77,45 @@ const CalendarView: React.FC = () => {
       <div className="flex space-x-4">
         {/* 左：カレンダー */}
         <div className="flex-shrink-0">
-          <Calendar
-            onClickDay={(value) => setSelectedDate(value)}
-            onActiveStartDateChange={({ activeStartDate }) =>
-              setActiveMonth(activeStartDate!)
+        <Calendar
+          onClickDay={(value) => setSelectedDate(value)}
+          onActiveStartDateChange={({ activeStartDate }) =>
+            setActiveMonth(activeStartDate!)
+          }
+          tileDisabled={({ date, view }) => {
+            if (view !== 'month') return false
+            return date.getMonth() !== activeMonth.getMonth()
+          }}
+          tileClassName={({ date, view }) => {
+            if (view === 'month' && date.getMonth() !== activeMonth.getMonth()) {
+              return 'hidden-tile'
             }
-            tileContent={({ date }) => {
-              const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
-              const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, '0')}-${String(jst.getDate()).padStart(2, '0')}`
-              const summary = summaries.find((s) => s.date === dateStr)?.summary
-              if (!summary) return null
+            return ''
+          }}
+          tileContent={({ date }) => {
+            const jst = new Date(date.getTime() + 9 * 60 * 60 * 1000)
+            const dateStr = `${jst.getFullYear()}-${String(jst.getMonth() + 1).padStart(2, '0')}-${String(jst.getDate()).padStart(2, '0')}`
+            const summary = summaries.find((s) => s.date === dateStr)?.summary
+            if (!summary) return null
 
-              const profit =
-                displayMode === '円' ? summary.profit : summary.profit_pips / 10
+            const profit =
+              displayMode === '円' ? summary.profit : summary.profit_pips / 10
 
-              const color =
-                profit > 0
-                  ? 'text-blue-600'
-                  : profit < 0
-                    ? 'text-red-600'
-                    : 'text-gray-400'
+            const color =
+              profit > 0
+                ? 'text-blue-600'
+                : profit < 0
+                  ? 'text-red-600'
+                  : 'text-gray-400'
 
-              return (
-                <p
-                  className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}
-                >
-                  {(profit > 0 ? '+' : '') +
-                    profit.toFixed(displayMode === '円' ? 0 : 1)}
-                </p>
-              )
-            }}
-          />
+            return (
+              <p className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}>
+                {(profit > 0 ? '+' : '') +
+                  profit.toFixed(displayMode === '円' ? 0 : 1)}
+              </p>
+            )
+          }}
+        />
 
           <div className="mt-4 p-2 border rounded bg-gray-50">
             <h3 className="font-bold mb-1">
