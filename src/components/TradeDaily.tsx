@@ -9,7 +9,6 @@ interface Props {
 export const TradeDaily: React.FC<Props> = ({ selectedDate }) => {
   const [memo, setMemo] = useState("")
   const [editMode, setEditMode] = useState(false)
-  const [saving, setSaving] = useState(false)
 
   const linkifyOptions = {
     target: "_blank",
@@ -75,9 +74,8 @@ export const TradeDaily: React.FC<Props> = ({ selectedDate }) => {
             <button
               className="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
               onClick={saveMemo}
-              disabled={saving}
             >
-              {saving ? "保存中…" : "保存"}
+              保存
             </button>
             <button
               className="px-3 py-1 bg-gray-300 rounded hover:bg-gray-400"
