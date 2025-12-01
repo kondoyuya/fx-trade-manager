@@ -38,10 +38,20 @@ export const TickChart: React.FC<TickChartProps> = ({ center }) => {
             const bidLine = chart.addSeries(LineSeries, {
                 color: "blue",
                 lineWidth: 1,
+                priceFormat: {
+                    type: 'price',
+                    precision: 3,
+                    minMove: 0.001,
+                },
             })
             const askLine = chart.addSeries(LineSeries, {
                 color: "red",
                 lineWidth: 1,
+                priceFormat: {
+                    type: 'price',
+                    precision: 3,
+                    minMove: 0.001,
+                },
             })
 
             const bidPoints = result.map((t, i) => ({

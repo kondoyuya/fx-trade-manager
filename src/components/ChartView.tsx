@@ -288,6 +288,12 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
         downColor: 'silver',
         borderDownColor: 'black',
         wickDownColor: 'black',
+
+        priceFormat: {
+          type: 'price',
+          precision: 3,
+          minMove: 0.001,
+        },
       })
       candleSeriesRef.current = series
 
@@ -316,6 +322,11 @@ const ChartView: React.FC<ChartViewProps> = ({ selectedTradeTime }) => {
             const maSeries = chart.addSeries(LineSeries, {
               color: color[i],
               lineWidth: 1,
+              priceFormat: {
+                type: 'price',
+                precision: 3,
+                minMove: 0.001,
+              },
             })
             maSeries.setData(maData)
             maSeriesRef.current = maSeries
