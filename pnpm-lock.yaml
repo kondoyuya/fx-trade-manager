@@ -29,6 +29,12 @@ importers:
       lightweight-charts:
         specifier: ^5.0.9
         version: 5.0.9
+      linkify-react:
+        specifier: ^4.3.2
+        version: 4.3.2(linkifyjs@4.3.2)(react@19.2.0)
+      linkifyjs:
+        specifier: ^4.3.2
+        version: 4.3.2
       react:
         specifier: ^19.1.0
         version: 19.2.0
@@ -949,6 +955,15 @@ packages:
 
   lightweight-charts@5.0.9:
     resolution: {integrity: sha512-8oQIis8jfZVfSwz8j9Z5x3O79dIRTkEYI9UY7DKtE4O3ZxlHjMK3L0+4nOVOOFq4FHI/oSIzz1RHeNImCk6/Jg==}
+
+  linkify-react@4.3.2:
+    resolution: {integrity: sha512-mi744h1hf+WDsr+paJgSBBgYNLMWNSHyM9V9LVUo03RidNGdw1VpI7Twnt+K3pEh3nIzB4xiiAgZxpd61ItKpQ==}
+    peerDependencies:
+      linkifyjs: ^4.0.0
+      react: '>= 15.0.0'
+
+  linkifyjs@4.3.2:
+    resolution: {integrity: sha512-NT1CJtq3hHIreOianA8aSXn6Cw0JzYOuDQbOrSPe7gqFnCpKP++MQe3ODgO3oh2GJFORkAAdqredOa60z63GbA==}
 
   loose-envify@1.4.0:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
@@ -1882,6 +1897,13 @@ snapshots:
   lightweight-charts@5.0.9:
     dependencies:
       fancy-canvas: 2.1.0
+
+  linkify-react@4.3.2(linkifyjs@4.3.2)(react@19.2.0):
+    dependencies:
+      linkifyjs: 4.3.2
+      react: 19.2.0
+
+  linkifyjs@4.3.2: {}
 
   loose-envify@1.4.0:
     dependencies:
