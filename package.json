@@ -15,6 +15,7 @@
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-shell": "^2.3.3",
     "@tauri-apps/plugin-updater": "^2.9.0",
     "lightweight-charts": "^5.0.9",
     "linkify-react": "^4.3.2",

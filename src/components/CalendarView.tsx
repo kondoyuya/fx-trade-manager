@@ -10,6 +10,7 @@ import { TradeTable } from '../components/TradeTable'
 import { TradeDaily } from '../components/TradeDaily'
 import { TradeSummaryView } from '../components/TradeSummaryView'
 import { formatProfit } from './format/Profit'
+import { IndicatorButton } from './IndicatorButton'
 
 const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
@@ -127,6 +128,9 @@ const CalendarView: React.FC = () => {
         <div className="flex-1 max-h-[570px] overflow-y-auto border rounded p-2">
           <h2 className="font-bold mb-2">
             {selectedDate.toLocaleDateString()} の詳細
+            <span className="ml-3">
+              <IndicatorButton date={selectedDate} />
+            </span>
           </h2>
 
           <TradeSummaryView

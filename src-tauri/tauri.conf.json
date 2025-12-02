@@ -46,7 +46,8 @@
         "https://github.com/kondoyuya/fx-trade-manager/releases/latest/download/latest.json"
       ],
       "dialog": true,
-      "allowUnverifiedUpdates": true
+      "allowUnverifiedUpdates": true,
+      "shell": {}
     }
   }
 }
