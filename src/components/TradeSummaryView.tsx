@@ -14,8 +14,8 @@ export const TradeSummaryView: React.FC<Props> = ({ summary, displayMode }) => {
   }
 
   const winRate =
-    summary.count && summary.count > 0
-      ? ((summary.wins / summary.count) * 100).toFixed(1)
+    summary.count && (summary.wins + summary.losses) > 0
+      ? ((summary.wins / (summary.wins + summary.losses) ) * 100).toFixed(1)
       : 0
 
   return (
