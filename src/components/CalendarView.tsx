@@ -19,6 +19,7 @@ const CalendarView: React.FC = () => {
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null)
   const [displayMode, setDisplayMode] = useState<'円' | 'pips'>('円')
   const [activeMonth, setActiveMonth] = useState<Date>(new Date())
+  const [showCount, setShowCount] = useState(false);
 
   async function fetchSummary() {
     try {
@@ -72,8 +73,24 @@ const CalendarView: React.FC = () => {
 
   return (
     <main className="container mx-auto p-4">
-      <div className="mb-4">
-        <DisplayModeToggle value={displayMode} onChange={setDisplayMode} />
+      <div className="mb-4 flex items-center gap-4">
+        <div className="mb-4 flex items-center gap-4">
+          <DisplayModeToggle value={displayMode} onChange={setDisplayMode} />
+
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <div
+              className={`relative w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition
+                ${showCount ? "bg-blue-500" : "bg-gray-300"}`}
+              onClick={() => setShowCount(!showCount)}
+            >
+              <div
+                className={`w-5 h-5 bg-white rounded-full shadow-md transform transition
+                  ${showCount ? "translate-x-5" : "translate-x-0"}`}
+              ></div>
+            </div>
+            <span className="text-sm">回数を表示</span>
+          </label>
+        </div>
       </div>
 
       <div className="flex space-x-4">
@@ -108,9 +125,14 @@ const CalendarView: React.FC = () => {
                 profit > 0 ? 'text-blue-600' : profit < 0 ? 'text-red-600' : 'text-gray-400'
 
               return (
-                <p className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}>
-                  {(profit > 0 ? '+' : '') + profit.toFixed(displayMode === '円' ? 0 : 1)}
-                </p>
+                <div className="flex flex-col items-center leading-tight">
+                  {showCount && (
+                    <p className="text-[10px] text-gray-400">{summary.count}回</p>
+                  )}
+                  <p className={`text-xs ${profit !== 0 ? 'font-bold' : ''} ${color}`}>
+                    {(profit > 0 ? '+' : '') + profit.toFixed(displayMode === '円' ? 0 : 1)}
+                  </p>
+                </div>
               )
             }}
           />
