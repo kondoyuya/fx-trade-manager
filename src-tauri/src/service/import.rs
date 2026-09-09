@@ -3,7 +3,7 @@ use crate::db::DbState;
 use crate::models::db::candle::Candle;
 use crate::models::db::record::Record;
 use crate::models::db::trade::Trade;
-use crate::utils::time_utils::jst_str_to_unix;
+use crate::utils::time_utils::{jst_str_to_unix, jst_str_to_unix_gmo};
 use chrono::{NaiveDateTime, TimeZone};
 use chrono_tz::Europe::Helsinki;
 use csv::{ReaderBuilder};
@@ -29,21 +29,7 @@ pub fn import_csv_to_db(db: &DbState, csv_paths: Vec<String>) -> Result<(), Stri
     ];
 
     let expected_headers_gmo = vec![
-        "約定日時", "取引区分", "受渡日", "約定番号", "銘柄名", "銘柄コード",
-        "限月", "コールプット区分", "権利行使価格", "権利行使価格通貨",
-        "カバードワラント商品種別", "売買区分", "通貨", "受渡通貨", "市場", "口座",
-        "信用区分", "約定数量", "約定単価", "コンバージョンレート", "手数料",
-        "手数料消費税", "建単価", "新規手数料", "新規手数料消費税", "管理費",
-        "名義書換料", "金利", "貸株料", "品貸料", "前日分値洗", "経過利子（円貨）",
-        "経過利子（外貨）", "経過日数（外債）", "所得税（外債）", "地方税（外債）",
-        "金利・価格調整額（CFD）", "配当金調整額（CFD）",
-        "金利・価格調整額（くりっく株365）", "配当金調整額（くりっく株365）",
-        "売建単価（くりっく365/くりっく株365）",
-        "買建単価（くりっく365/くりっく株365）",
-        "円貨スワップ損益", "外貨スワップ損益", "約定金額（円貨）",
-        "約定金額（外貨）", "決済金額（円貨）", "決済金額（外貨）",
-        "実現損益（円貨）", "実現損益（外貨）", "実現損益（円換算額）",
-        "受渡金額（円貨）", "受渡金額（外貨）", "備考",
+        "注文番号", "通貨ペア", "売買", "約定数量", "取引種類", "約定レート", "建玉レート", "約定日時", "受渡日", "累計スワップ円", "累計スワップドル", "スワップ円参考", "手数料", "決済損益円", "決済損益ドル", "損益円参考", "",
     ];
 
     let mut detected_type: Option<AccountType> = None;
@@ -60,6 +46,8 @@ pub fn import_csv_to_db(db: &DbState, csv_paths: Vec<String>) -> Result<(), Stri
             .from_reader(transcoded);
 
         let headers = rdr.headers().map_err(|e| e.to_string())?;
+
+        dbg!(headers);
 
         // DMM 判定
         let is_dmm =
@@ -249,25 +237,25 @@ fn process_gmo_csv(mut rdr: csv::Reader<impl std::io::Read>) -> Result<Vec<Recor
 
     let mut records: Vec<Record> = Vec::new();
     for row in records_csv.iter().rev() {
-        let trade_type_raw = row.get(1).unwrap_or("").trim();
-        // "FXネオ新規" または "FXネオ決済" 以外ならスキップ
+        let trade_type_raw = row.get(4).unwrap_or("").trim();
+        // "新規" または "決済" 以外ならスキップ
         let trade_type = match trade_type_raw {
-            "FXネオ新規" => "新規",
-            "FXネオ決済" => "決済",
+            "新規" => "新規",
+            "決済" => "決済",
             _ => continue,
         };
 
-        let order_time_str = row.get(0).unwrap_or(""); // 約定日時
-        let order_time_unix = jst_str_to_unix(order_time_str).unwrap_or(0);
+        let order_time_str = row.get(7).unwrap_or(""); // 約定日時
+        let order_time_unix = jst_str_to_unix_gmo(order_time_str).unwrap_or(0);
 
         let record = Record {
-            pair: row.get(4).unwrap_or("").to_string(),  // 銘柄名
-            side: row.get(11).unwrap_or("").to_string(), // 売買区分（"買" or "売"）
+            pair: row.get(1).unwrap_or("").to_string(),  // 銘柄名
+            side: row.get(2).unwrap_or("").to_string(), // 売買区分（"買" or "売"）
             trade_type: trade_type.to_string(),
-            lot: row.get(17).unwrap_or("0").parse::<f64>().unwrap_or(0.0) / 10000.0, // 約定数量
-            rate: row.get(18).unwrap_or("0").parse::<f64>().unwrap_or(0.0),          // 約定単価
-            profit: parse_i32_from_csv(row.get(46).unwrap_or("")), // 実現損益（円貨）
-            swap: parse_i32_from_csv(row.get(42).unwrap_or("")),   // 円貨スワップ損益
+            lot: row.get(3).unwrap_or("0").parse::<f64>().unwrap_or(0.0), // 約定数量
+            rate: row.get(5).unwrap_or("0").parse::<f64>().unwrap_or(0.0),          // 約定単価
+            profit: parse_i32_from_csv(row.get(13).unwrap_or("")), // 実現損益（円貨）
+            swap: parse_i32_from_csv(row.get(9).unwrap_or("")),   // 円貨スワップ損益
             order_time: order_time_unix,
             ..Default::default()
         };

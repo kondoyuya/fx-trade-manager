@@ -12,6 +12,15 @@ pub fn jst_str_to_unix(time_str: &str) -> Option<i64> {
     Some(jst_dt.with_timezone(&Utc).timestamp())
 }
 
+/// "YY/MM/DD hh:mm:ss"（JST）→ UNIX time（UTC基準
+pub fn jst_str_to_unix_gmo(time_str: &str) -> Option<i64> {
+    let naive = NaiveDateTime::parse_from_str(time_str, "%y/%m/%d %H:%M:%S").ok()?;
+
+    // JSTタイムゾーンとして扱い、UTCに変換
+    let jst_dt = Tokyo.from_local_datetime(&naive).single()?;
+    Some(jst_dt.with_timezone(&Utc).timestamp())
+}
+
 /// JSTのUNIX時刻から「取引日（夏時間は翌6時、冬時間は翌7時で区切り）」を算出
 pub fn get_business_date_from_unix(unix: i64) -> chrono::NaiveDate {
     let jst = chrono_tz::Asia::Tokyo;
