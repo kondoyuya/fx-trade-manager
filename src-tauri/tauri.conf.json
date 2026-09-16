@@ -35,7 +35,8 @@
     "resources": [
       "mt5/mt5_server.exe",
       "mt5/mt5_server.py",
-      "mt5/requirements.txt"
+      "mt5/requirements.txt",
+      "sounds/Time_Signal-Beep01.mp3"
     ]
   },
   "plugins": {
